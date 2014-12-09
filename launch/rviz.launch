@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="rviz" type="rviz" name="rawseeds_rviz" args="-d $(find rawseeds_tools)/data/rviz-settings.rviz"/>
+</launch>
