@@ -17,17 +17,17 @@ Example usage:
 
 Convert some sensor streams to bag files:
 
-    rosrun rawseeds_tools odometry2bag.py Bicocca_2009-02-25a-ODOMETRY_XYT.csv odom.bag
+    rosrun rawseeds_ros odometry2bag.py Bicocca_2009-02-25a-ODOMETRY_XYT.csv odom.bag
 
-    rosrun rawseeds_tools sick2bag.py Bicocca_2009-02-25a-SICK_FRONT.csv sick_front.bag --frame_id sick_front --topic sick_front
-    rosrun rawseeds_tools sick2bag.py Bicocca_2009-02-25a-SICK_REAR.csv sick_rear.bag --frame_id sick_rear --topic sick_rear
+    rosrun rawseeds_ros sick2bag.py Bicocca_2009-02-25a-SICK_FRONT.csv sick_front.bag --frame_id sick_front --topic sick_front
+    rosrun rawseeds_ros sick2bag.py Bicocca_2009-02-25a-SICK_REAR.csv sick_rear.bag --frame_id sick_rear --topic sick_rear
     
-    rosrun rawseeds_tools hokuyo2bag.py Bicocca_2009-02-25a-HOKUYO_FRONT.csv hokuyo_front.bag --frame_id hokuyo_front --topic hokuyo_front
-    rosrun rawseeds_tools hokuyo2bag.py Bicocca_2009-02-25a-HOKUYO_REAR.csv hokuyo_rear.bag --frame_id hokuyo_rear --topic hokuyo_rear
+    rosrun rawseeds_ros hokuyo2bag.py Bicocca_2009-02-25a-HOKUYO_FRONT.csv hokuyo_front.bag --frame_id hokuyo_front --topic hokuyo_front
+    rosrun rawseeds_ros hokuyo2bag.py Bicocca_2009-02-25a-HOKUYO_REAR.csv hokuyo_rear.bag --frame_id hokuyo_rear --topic hokuyo_rear
     
 Merge bag files:
     
-    rosrun rawseeds_tools merge_bags.py -i sick_front.bag hokuyo_front.bag sick_rear.bag hokuyo_rear.bag odom.bag -o combined.bag
+    rosrun rawseeds_ros merge_bags.py -i sick_front.bag hokuyo_front.bag sick_rear.bag hokuyo_rear.bag odom.bag -o combined.bag
     
 Run bag file:
 
@@ -36,8 +36,13 @@ Run bag file:
     
 Launch tf nodes containing the extrinsic sensor calibration
     
-    roslaunch rawseeds_tools transforms.launch
+    roslaunch rawseeds_ros transforms.launch
     
 Visualization with rviz:
 
-    roslaunch rawseeds_tools rviz.launch
+    roslaunch rawseeds_ros rviz.launch
+
+
+Log a trajectory to a csv file
+
+     rosrun rawseeds_ros log_trajectory.py test.csv /map  /base_link
