@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+<!-- Setup -->
+	<include file="$(find rawseeds_ros)/launch/transforms.launch" />
+	
+
+
+	<node pkg="map_server" type="map_server" name="map_server" args="/home/rauscher/arbeitspakete/spine_slam/vector_map/vector_map_bicocca_complete.yaml"/>
+
+	<node pkg="amcl" type="amcl" name="amcl" args="/scan:=/sick_front"  output="screen"/>
+	<node pkg="rawseeds_ros" name="publish_initial_pose" type="publish_initial_pose.sh" output="screen" />
+
+	<node pkg="rosbag" type="play" name="player" output="screen" args="/home/rauscher/bagfiles/benchmark/Bicocca_2009-02-25b-static-artificial-light/combined.bag-25b --clock  -r 2"/>
+
+
+
+	<node pkg="rawseeds_ros" type="log_trajectory.py" name="log_trajectory" args=" --filename test.csv --fixed_frame /map --moving_frame /base_link" output="screen"/>
+
+</launch>
