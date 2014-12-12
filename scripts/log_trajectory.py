@@ -38,7 +38,7 @@ class LogTrajectory:
         time_now = rospy.Time.now()        
         try:
             now = rospy.Time.now()
-            self.tf_listener.waitForTransform(self.args.fixed_frame, self.args.moving_frame, now, rospy.Duration(0.1))
+            self.tf_listener.waitForTransform(self.args.fixed_frame, self.args.moving_frame, now, rospy.Duration(0.8))
             (trans,rot) = self.tf_listener.lookupTransform(self.args.fixed_frame, self.args.moving_frame, now)
             (r, p, yaw) = tf.transformations.euler_from_quaternion(rot)
             #p_string = "[%f]Got transform  [x, y, yaw] = [%f, %f, %f]"%(now.to_sec(),trans[0], trans[1], yaw)
@@ -62,8 +62,11 @@ class LogTrajectory:
 if __name__ == "__main__":
  
     parser = argparse.ArgumentParser(description='logs the trajectory of an object by recording tf poses')
-    parser.add_argument('filename', help='Name of the file to be logged')
-    parser.add_argument('fixed_frame', help='A fixed frame e.g. /map')
-    parser.add_argument('moving_frame', help='A moving frame e.g. /base_link')
+    parser.add_argument('--filename',  type=str, default="logged_trajectory.csv", help='Name of the file to be logged')
+    parser.add_argument('--fixed_frame',  type=str, default="/map", help='A fixed frame e.g. /map')
+    parser.add_argument('--moving_frame',  type=str, default="/base_link", help='A moving frame e.g. /base_link')
+    
+    args, unkown = parser.parse_known_args()
      
-    LogTrajectory(parser.parse_args())
+    
+    LogTrajectory(args)
