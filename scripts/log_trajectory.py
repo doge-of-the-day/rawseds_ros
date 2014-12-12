@@ -15,6 +15,7 @@ class LogTrajectory:
         #init ros
         rospy.init_node('log_trajectory', anonymous=True) #make node 
         self.tf_listener = tf.TransformListener()
+        self.old_time = 0
 
     
         #Read Parameters
@@ -37,15 +38,19 @@ class LogTrajectory:
         time_now = rospy.Time.now()        
         try:
             now = rospy.Time.now()
-            self.tf_listener.waitForTransform(self.args.fixed_frame, self.args.moving_frame, now, rospy.Duration(4.0))
+            self.tf_listener.waitForTransform(self.args.fixed_frame, self.args.moving_frame, now, rospy.Duration(0.1))
             (trans,rot) = self.tf_listener.lookupTransform(self.args.fixed_frame, self.args.moving_frame, now)
             (r, p, yaw) = tf.transformations.euler_from_quaternion(rot)
             #p_string = "[%f]Got transform  [x, y, yaw] = [%f, %f, %f]"%(now.to_sec(),trans[0], trans[1], yaw)
             p_string = "%f, %f, %f, %f\n"%(now.to_sec(),trans[0], trans[1], yaw)
-            print p_string
-            self.file.write(p_string)
-            #savearray = [now.to_sec(), trans[0], trans[1], yaw]
-            #numpy.savetxt(self.args.filename, numpy.transpose(savearray), delimiter=",")
+            #print p_string
+            time_diff = now.to_sec() - self.old_time 
+            self.old_time = now.to_sec()
+            # filter out the same times to avoid problems with interpolation
+            if (time_diff > 0):                
+                self.file.write(p_string)
+            else:
+                print "Error time diff = 0 at ",now.to_sec()
         
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             print "Error: Could not get transform from %s to %s at time %f"%(self.args.moving_frame, self.args.fixed_frame, time_now.to_sec())
