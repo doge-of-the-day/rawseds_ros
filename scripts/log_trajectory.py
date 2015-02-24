@@ -52,7 +52,7 @@ class LogTrajectory:
             else:
                 print "Error time diff = 0 at ",now.to_sec()
         
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException, tf.Exception):
             print "Error: Could not get transform from %s to %s at time %f"%(self.args.moving_frame, self.args.fixed_frame, time_now.to_sec())
             return
 
