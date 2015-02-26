@@ -59,9 +59,14 @@ class LogTrajectory:
             self.file.write(p_string)
             p_string_relations = "%f, %f, %f, %f, 0, 0, 0, %f\n"%(self.old_time, time, x-self.old_x, y-self.old_y, yaw-self.old_yaw)
             self.file_relation.write(p_string_relations)
-        else:
-            print "Error time diff = 0 at ", time
-        self.old_time = time    
+            
+            self.old_time = time  
+            self.old_x = x
+            self.old_y = y
+            self.old_yaw = yaw
+#        else:
+#            print "Error time diff = 0 at ", time
+
         
 
     
