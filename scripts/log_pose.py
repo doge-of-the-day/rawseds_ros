@@ -3,6 +3,7 @@ import argparse
 import rospy
 import tf
 import tf.msg
+import numpy as np
 
 from nav_msgs.msg import Odometry
 
@@ -40,6 +41,16 @@ class LogTrajectory:
         rospy.spin()    
 
 
+# Taken from the matlab function of the benchmar toolbox
+#s = sin(t1(3,:));
+#c = cos(t1(3,:));
+#dx = t2(1,:)-t1(1,:);
+#dy = t2(2,:)-t1(2,:);
+#tac =  [ c .* dx + s .* dy
+#        -s .* dx + c .* dy
+#        normalize_ang(t2(3,:)-t1(3,:)) ];
+
+
     def odomCallback(self,data):        
         time = data.header.stamp.to_sec()
         
@@ -48,6 +59,7 @@ class LogTrajectory:
         quat = [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]
         
         (r, p, yaw) = tf.transformations.euler_from_quaternion(quat)
+        yaw = yaw
         x = data.pose.pose.position.x
         y = data.pose.pose.position.y
         p_string = "%f, %f, %f, %f\n"%(time, x, y, yaw)
@@ -55,9 +67,21 @@ class LogTrajectory:
         #time_diff = time.to_sec() - self.old_time.to_sec()
         time_diff = time - self.old_time        
         # filter out the same times to avoid problems with interpolation
-        if (time_diff > 0):                
+        if (time_diff > 0.02): # make 50Hz GT 1/50 = 0.02
+            c = np.cos(self.old_yaw)
+            s = np.sin(self.old_yaw)
+#            dx = -c * self.old_x -s * self.old_y + x
+#            dy =  s * self.old_x -c * self.old_y + y
+#            dw = (-self.old_yaw + yaw) % (2*np.pi)
+            Dx = x - self.old_x
+            Dy = y - self.old_y
+            
+            dx =  c * Dx + s * Dy
+            dy = -s * Dx + c * Dy
+            dw = (yaw-self.old_yaw) % (2*np.pi)
+            
             self.file.write(p_string)
-            p_string_relations = "%f, %f, %f, %f, 0, 0, 0, %f\n"%(self.old_time, time, x-self.old_x, y-self.old_y, yaw-self.old_yaw)
+            p_string_relations = "%f, %f, %f, %f, 0, 0, 0, %f\n"%(self.old_time, time, dx, dy, dw)
             self.file_relation.write(p_string_relations)
             
             self.old_time = time  
