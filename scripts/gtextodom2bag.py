@@ -33,12 +33,9 @@ def main():
                 row = line.split(',')
 
                 t = float(row[0])  # timestamp in SECONDS
-                counter = int(row[1])
-                ticks_right = int(row[2])
-                ticks_left = int(row[3])
-                x = float(row[4])
-                y = float(row[5])
-                th = float(row[6])
+                x = float(row[1])
+                y = float(row[2])
+                th = float(row[3])
 
                 # create odometry message:
                 msg = nav_msgs.msg.Odometry()
