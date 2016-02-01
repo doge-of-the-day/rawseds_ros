@@ -19,8 +19,8 @@ def main():
     print('Input file:  ' + args.input)
     print('Output file: ' + args.output)
 
-    frame_id = '/odom'
-    topic = '/odom'
+    frame_id = '/odom_gt'
+    topic = '/odom_gt'
 
     n_messages = 0
 
