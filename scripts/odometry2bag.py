@@ -62,7 +62,7 @@ def main():
                 out_bag.write("/tf", tf_msg, rospy.Time.from_sec(t))
 
                 n_messages += 1
-                print(str(i / (1.0 * count) * 100) + "% done")
+                print("Progress: " + "{0:.2f}".format(i / (1.0 * count) * 100) + "%")
 
     print("Conversion of %d messages done." % n_messages)
     return

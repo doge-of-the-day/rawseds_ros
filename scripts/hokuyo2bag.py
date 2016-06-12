@@ -27,6 +27,8 @@ def main():
 
     with rosbag.Bag(args.output, 'w') as out_bag:
         with open(args.input) as input_file:
+            count = len(input_file.readlines())
+            input_file.seek(0)
             for i, line in enumerate(input_file):
                 # read line:
                 row = line.split(',')
@@ -57,6 +59,9 @@ def main():
                 out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
 
                 n_messages += 1
+
+                print("Progress: " + "{0:.2f}".format(i / (1.0 * count) * 100) + "%")
+
 
     print("Conversion of %d messages done." % n_messages)
     print("Min range seen: %f" % min_range)
