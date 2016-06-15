@@ -4,7 +4,7 @@ import numpy
 import rosbag
 import rospy
 import sensor_msgs.msg
-
+import sys
 
 def main():
     parser = argparse.ArgumentParser(description='convert rawseeds sick data to ROS bag file')
@@ -62,8 +62,10 @@ def main():
 
                 n_messages += 1
 
-                print("Progress: " + "{0:.2f}".format(i / (1.0 * count) * 100) + "%")
+                str = 'Progress: ' + '{0:.2f}'.format(i / (1.0 * count) * 100) + '%'
+                sys.stdout.write('%s\r' % str)
 
+    print
     print("Conversion of %d messages done." % n_messages)
     print("Min range seen: %f" % min_range)
     print("Max range seen: %f" % max_range)
