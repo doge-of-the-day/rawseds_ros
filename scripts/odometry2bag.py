@@ -63,8 +63,8 @@ def main():
 
                 n_messages += 1
 
-                str = 'Progress: ' + '{0:.2f}'.format(i / (1.0 * count) * 100) + '%'
-                sys.stdout.write('%s\r' % str)
+                state = 'Progress: ' + '{0:.2f}'.format(i / (1.0 * count) * 100) + '%'
+                sys.stdout.write('%s\r' % state)
 
     print
     print("Conversion of %d messages done." % n_messages)
