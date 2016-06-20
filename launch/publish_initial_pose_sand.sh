@@ -8,8 +8,8 @@ rostopic pub /initialpose geometry_msgs/PoseWithCovarianceStamped "header:
 pose: 
   pose: 
     position: 
-      x: 41.578
-      y: 17.046
+      x: 43.278
+      y: 19.046
       z: 0.0
     orientation: 
       x: 0.0
