@@ -43,6 +43,7 @@ def main():
                 # create odometry message:
                 msg = nav_msgs.msg.Odometry()
                 msg.header.frame_id = frame_id
+                msg.child_frame_id = "base_link"
                 msg.header.stamp = rospy.Time.from_sec(t)
 
                 msg.pose.pose.position = geometry_msgs.msg.Point(x, y, 0)
