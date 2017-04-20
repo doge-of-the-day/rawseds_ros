@@ -8,7 +8,7 @@ ADD_DEFINITIONS(
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 find_package(catkin REQUIRED camera_info_manager cmake_modules cv_bridge geometry_msgs image_transport rosbag roscpp sensor_msgs tf_conversions)
 find_package(Eigen3 REQUIRED)
-find_package(OpenCV 2.3 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 catkin_package()
 
