@@ -13,11 +13,16 @@ def main():
     parser = argparse.ArgumentParser(description='convert rawseeds odometry data to ROS bag file')
     parser.add_argument('input', help='input rawseeds file')
     parser.add_argument('output', help='name of output bag file')
+    parser.add_argument('--frame_id', type=str, default="/odom_gt", help='frame_id for ROS message')
+    parser.add_argument('--topic', type=str, default="/odom_gt", help='topic name for ROS message')
+
 
     args = parser.parse_args()
 
     print('Input file:  ' + args.input)
     print('Output file: ' + args.output)
+    print('frame_id:    ' + args.frame_id)
+    print('topic:       ' + args.topic)
 
     frame_id = '/odom_gt'
     topic = '/odom_gt'
@@ -39,12 +44,12 @@ def main():
 
                 # create odometry message:
                 msg = nav_msgs.msg.Odometry()
-                msg.header.frame_id = frame_id
+                msg.header.frame_id = args.frame_id
                 msg.header.stamp = rospy.Time.from_sec(t)
 
                 msg.pose.pose.position = geometry_msgs.msg.Point(x, y, 0)
                 msg.pose.pose.orientation = geometry_msgs.msg.Quaternion(0, 0, numpy.sin(th/2), numpy.cos(th/2))
-                out_bag.write(topic, msg, rospy.Time.from_sec(t))
+                out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
 
                 odom_trans = geometry_msgs.msg.TransformStamped()
                 odom_trans.header = msg.header
