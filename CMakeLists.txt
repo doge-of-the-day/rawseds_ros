@@ -26,3 +26,9 @@ set(COMMON_LIBRARIES
 
 add_executable(camera2bag src/camera2bag.cpp)
 target_link_libraries(camera2bag ${COMMON_LIBRARIES})
+
+
+add_executable(tune_stereo_matching
+    src/tune_stereo_matching.cpp
+)
+target_link_libraries(tune_stereo_matching ${COMMON_LIBRARIES})
