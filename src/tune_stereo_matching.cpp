@@ -93,7 +93,6 @@ int main(int argc, char *argv[])
             } else {
                 std::cerr << id << " : paths missing" << std::endl;
             }
-            std::cout << "update" << std::endl;
         }
 
         if(!right.empty() && !left.empty()) {
