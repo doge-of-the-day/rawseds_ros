@@ -103,9 +103,9 @@ int main(int argc, char *argv[])
     cv::Ptr<cv::StereoBM>   stereo_bm;
     cv::Ptr<cv::StereoSGBM> stereo_sgbm;
 
-    int blockSize         = 21;
+    int blockSize         = 9;
     int numDisparities    = 0;
-    int minDisparity      = 0;
+    int minDisparity      = 16;
     int P1                = 0;
     int P2                = 0;
     int disp12MaxDiff     = 0;
@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
                 cv::Mat disparity;
                 stereo_bm = cv::StereoBM::create(numDisparities, blockSize);
                 stereo_bm->compute(left_gray, right_gray, disparity);
+                stereo_bm->setBlockSize(5);
                 cv::imshow("disparity", disparity);
             }
         }

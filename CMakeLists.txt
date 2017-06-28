@@ -32,3 +32,8 @@ add_executable(tune_stereo_matching
     src/tune_stereo_matching.cpp
 )
 target_link_libraries(tune_stereo_matching ${COMMON_LIBRARIES})
+
+add_executable(stereo_match
+    src/stereo_match.cpp
+)
+target_link_libraries(stereo_match ${COMMON_LIBRARIES})
