@@ -29,6 +29,16 @@ void runStereoMatcher(const cv::Mat &right,
 }
 
 
+void buttonBM(int state, void *userdata)
+{
+    *(static_cast<bool*>(userdata)) = false;
+}
+
+void buttonSGBM(int state, void *userdata)
+{
+    *(static_cast<bool*>(userdata)) = true;
+}
+
 int main(int argc, char *argv[])
 {
     if(argc != 3) {
@@ -72,15 +82,59 @@ int main(int argc, char *argv[])
     const int ESC = 27;
     const int ARR_LEFT  = 81;
     const int ARR_RIGHT = 83;
+    const int SPACE = 32;
 
     std::map<std::string, std::string>::const_iterator it_right = paths_right.begin();
+    auto increment = [&paths_right, &it_right] () {
+        ++it_right;
+        if(it_right == paths_right.end()) {
+            it_right = paths_right.begin();
+        }
+    };
+    auto decrement = [&paths_right, &it_right] () {
+        if(it_right == paths_right.begin()) {
+            it_right = paths_right.end();
+        }
+        --it_right;
+    };
+
+    //// stereo matching and parameters
+    bool                    use_sgbm = false;
+    cv::Ptr<cv::StereoBM>   stereo_bm;
+    cv::Ptr<cv::StereoSGBM> stereo_sgbm;
+
+    int blockSize         = 9;
+    int numDisparities    = 0;
+    int minDisparity      = 16;
+    int P1                = 0;
+    int P2                = 0;
+    int disp12MaxDiff     = 0;
+    int preFilterCap      = 0;
+    int uniquenessRatio   = 0;
+    int speckleWindowSize = 0;
+    int speckleRange      = 0;
+    int mode              = cv::StereoSGBM::MODE_SGBM;
+
+
+
+
+
+    //// images and buffers
     cv::Mat left;
     cv::Mat right;
+    cv::Mat left_gray;
+    cv::Mat right_gray;
     cv::Mat display;
-    bool    update = false;
-    cv::namedWindow("display");
-    int key = 0;
 
+    ////
+    bool    update = false;
+    bool    auto_increment = false;
+
+    cv::namedWindow("display");
+    cv::createButton("BM",   buttonBM,   &use_sgbm,CV_RADIOBOX, 1);
+    cv::createButton("SGBM", buttonSGBM, &use_sgbm,CV_RADIOBOX, 0);
+
+    int key = 0;
     while(key != ESC) {
         if(left.empty() || right.empty() || update) {
             const std::string id = it_right->first;
@@ -89,6 +143,8 @@ int main(int argc, char *argv[])
             if(path_right != "" && path_left != "") {
                 right = cv::imread(path_right);
                 left = cv::imread(path_left);
+                cv::cvtColor(right, right_gray, CV_BGR2GRAY);
+                cv::cvtColor(left, left_gray, CV_BGR2GRAY);
                 update = false;
             } else {
                 std::cerr << id << " : paths missing" << std::endl;
@@ -104,24 +160,50 @@ int main(int argc, char *argv[])
             cv::imshow("display", display);
 
             /// run the stereo matcher here
+            cv::Mat left_gray;
+            cv::Mat right_gray;
 
+            if(use_sgbm) {
+                cv::Mat disparity;
+                stereo_sgbm = cv::StereoSGBM::create(minDisparity,
+                                                     numDisparities,
+                                                     blockSize,
+                                                     P1,
+                                                     P2,
+                                                     disp12MaxDiff,
+                                                     preFilterCap,
+                                                     uniquenessRatio,
+                                                     speckleWindowSize,
+                                                     speckleRange,
+                                                     mode);
+                stereo_sgbm->compute(left_gray, right_gray, disparity);
+                cv::imshow("disparity", disparity);
+            } else {
+                cv::Mat disparity;
+                stereo_bm = cv::StereoBM::create(numDisparities, blockSize);
+                stereo_bm->compute(left_gray, right_gray, disparity);
+                stereo_bm->setBlockSize(5);
+                cv::imshow("disparity", disparity);
+            }
         }
 
         key = cv::waitKey(19) & 0xFF;
+        if(auto_increment) {
+            increment();
+            update = true;
+        }
+
         switch(key) {
         case ARR_LEFT:
-            if(it_right == paths_right.begin()) {
-                it_right = paths_right.end();
-            }
-            --it_right;
+            decrement();
             update = true;
             break;
         case ARR_RIGHT:
-            ++it_right;
-            if(it_right == paths_right.end()) {
-                it_right = paths_right.begin();
-            }
+            increment();
             update = true;
+            break;
+        case SPACE:
+            auto_increment = !auto_increment;
             break;
         default:
             break;
