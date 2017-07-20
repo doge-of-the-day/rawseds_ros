@@ -11,6 +11,7 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
+#include <pcl/visualization/cloud_viewer.h>
 
 namespace po = boost::program_options;
 namespace bf = boost::filesystem;
@@ -45,6 +46,7 @@ bool parseCommandline(int   argc,
                       bf::path &path_svs_r,
                       bf::path &path_calibration,
                       bf::path &path_matcher,
+                      bf::path &path_bagfile,
                       bool     &debug)
 {
     try {
@@ -63,6 +65,9 @@ bool parseCommandline(int   argc,
                 ("matcher,m",
                  po::value<std::string>()->default_value(""),
                  "opencv '.yaml'-file containing the stereo matching algorithm preferences.")
+                ("output,o",
+                 po::value<std::string>()->default_value(""),
+                 "ouput bag file.")
                 ("debug,d", "debug output");
 
         po::variables_map vm;
@@ -86,6 +91,10 @@ bool parseCommandline(int   argc,
             }
             if(vm.count("matcher") == 0ul) {
                 std::cerr << "Missing path to the matcher which should be employed." << std::endl;
+                return false;
+            }
+            if(vm.count("output") == 0ul) {
+                std::cerr << "Missing path for the output bagfile." << std::endl;
                 return false;
             }
             debug = vm.count("debug") == 1ul;
@@ -154,9 +163,96 @@ struct Calibration {
         cv::remap(left, left_undistorted, map_left_1_, map_left_2_, CV_INTER_LINEAR);
         cv::remap(right, right_undistorted, map_right_1_, map_right_2_, CV_INTER_LINEAR);
     }
-
-
 };
+
+bool loadMatcher(const bf::path &path_matcher,
+                 cv::Ptr<cv::StereoMatcher> &matcher)
+{
+    cv::FileStorage fs(path_matcher.string(), cv::FileStorage::READ);
+    cv::String matcher_type;
+    fs["matcher_type"] >> matcher_type;
+    std::cerr << matcher_type << std::endl;
+    if(matcher_type == "BM") {
+        int min_disparity;
+        int num_disparitites;
+        int block_size;
+        int prefilter_type;
+        int prefilter_size;
+        int prefilter_cap;
+        int texture_threshold;
+        int uniqueness_ratio;
+        int speckle_window_size;
+        int speckle_range;
+        int disparity_12_max_diff;
+
+        fs["minDisparity"     ] >> min_disparity;
+        fs["numDisparities"   ] >> num_disparitites;
+        fs["blockSize"        ] >> block_size;
+        fs["preFilterType"    ] >> prefilter_type;
+        fs["preFilterSize"    ] >> prefilter_size;
+        fs["preFilterCap"     ] >> prefilter_cap;
+        fs["textureThreshold" ] >> texture_threshold;
+        fs["uniquenessRatio"  ] >> uniqueness_ratio;
+        fs["speckleWindowSize"] >> speckle_window_size;
+        fs["speckleRange"     ] >> speckle_range;
+        fs["disp12MaxDiff"    ] >> disparity_12_max_diff;
+
+        auto bm = cv::StereoBM::create(num_disparitites, block_size);
+        bm->setPreFilterCap(prefilter_cap);
+        bm->setPreFilterType(prefilter_type);
+        bm->setMinDisparity(min_disparity);
+        bm->setNumDisparities(num_disparitites);
+        bm->setTextureThreshold(texture_threshold);
+        bm->setUniquenessRatio(uniqueness_ratio);
+        bm->setSpeckleWindowSize(speckle_window_size);
+        bm->setSpeckleRange(speckle_range);
+        bm->setDisp12MaxDiff(disparity_12_max_diff);
+        bm->setPreFilterSize(prefilter_size);
+        matcher = bm;
+    } else if(matcher_type == "SGBM") {
+        int mode;
+        int prefilter_cap;
+        int block_size;
+        int P1;
+        int P2;
+        int num_disparitites;
+        int min_disparity;
+        int uniqueness_ratio;
+        int speckle_window_size;
+        int speckle_range;
+        int disparity_12_max_diff;
+
+        fs["mode"             ] >> mode;
+        fs["preFilterCap"     ] >> prefilter_cap;
+        fs["blockSize"        ] >> block_size;
+        fs["P1"               ] >> P1;
+        fs["P2"               ] >> P2;
+        fs["numDisparities"   ] >> num_disparitites;
+        fs["minDisparity"     ] >> min_disparity;
+        fs["uniquenessRatio"  ] >> uniqueness_ratio;
+        fs["speckleWindowSize"] >> speckle_window_size;
+        fs["speckleRange"     ] >> speckle_range;
+        fs["disp12MaxDiff"    ] >> disparity_12_max_diff;
+
+        auto sgbm = cv::StereoSGBM::create(min_disparity,
+                                           num_disparitites,
+                                           block_size,
+                                           P1,
+                                           P2,
+                                           disparity_12_max_diff,
+                                           prefilter_cap,
+                                           uniqueness_ratio,
+                                           speckle_window_size,
+                                           speckle_range,
+                                           mode);
+        matcher = sgbm;
+    } else {
+        std::cerr << "Unknown matcher type." << std::endl;
+        return false;
+    }
+    fs.release();
+    return true;
+}
 
 
 int main(int argc, char *argv[])
@@ -165,9 +261,13 @@ int main(int argc, char *argv[])
     bf::path path_svs_r;
     bf::path path_calibration;
     bf::path path_matcher;
+    bf::path path_bagfile;
     bool debug = false;
 
-    if(!parseCommandline(argc, argv, path_svs_l, path_svs_r, path_calibration, path_matcher, debug))
+    if(!parseCommandline(argc, argv, path_svs_l, path_svs_r,
+                         path_calibration, path_matcher,
+                         path_bagfile,
+                         debug))
         return 1;
 
     /// check input paths
@@ -188,22 +288,24 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    std::cout << "Current path '" <<
+    std::cout << "Current path " <<
                  bf::current_path()
-              << "'." << std::endl;
-    std::cout << "Using left input images from folder '" <<
+              << "." << std::endl;
+    std::cout << "Using left input images from folder " <<
                  path_svs_l
-              << "'." << std::endl;
-    std::cout << "Using right input images from folder '" <<
+              << "." << std::endl;
+    std::cout << "Using right input images from folder " <<
                  path_svs_r
-              << "'." << std::endl;
-    std::cout << "Using stereo camera calibration '" <<
+              << "." << std::endl;
+    std::cout << "Using stereo camera calibration " <<
                  path_calibration
-              << "'." << std::endl;
-    std::cout << "Using stereo matcher configuration '" <<
+              << "." << std::endl;
+    std::cout << "Using stereo matcher configuration " <<
                  path_matcher
-              << "'." << std::endl;
-
+              << "." << std::endl;
+    std::cout << "Putting the data out into " <<
+                 path_bagfile
+              << "." << std::endl;
 
     /// read the directories
     std::vector<std::string> images_left;
@@ -223,81 +325,60 @@ int main(int argc, char *argv[])
     calibration.read(fs);
     fs.release();
     /// load the matcher
-    fs.open(path_matcher.string(), cv::FileStorage::READ);
-    cv::FileNode node = fs["my_object"];
-    std::string type;
-    node["name"] >> type;
     cv::Ptr<cv::StereoMatcher> matcher;
-    if(type == "StereoMatcher.SGBM") {
-        matcher = cv::StereoSGBM::create(1, 1, 3);
-    } else if(type == "StereoMatcher.BM") {
-        matcher = cv::StereoBM::create();
-    } else {
-        throw std::runtime_error("Unknown matcher type '" + type + "'!");
+    if(!loadMatcher(path_matcher,
+                    matcher)) {
+        std::cerr << "Could not load matcher!" << std::endl;
+        return 1;
     }
-    matcher->read(node);
-    fs.release();
 
     /// do the work
     const std::size_t size = images_left.size();
+    const std::string frame_id = "svs_l";
+    const double      max_depth = 25.0;
+
+    std::shared_ptr<pcl::visualization::CloudViewer> viewer;
+    if(debug) {
+        viewer.reset(new pcl::visualization::CloudViewer("PointCloud"));
+    }
+
     for(std::size_t i = 0 ; i < size ; ++i) {
         const double stamp_left = images_left_stamps[i];
         const double stamp_right= images_right_stamps[i];
         cv::Mat left  = cv::imread(images_left[i], -1);
-        cv::Mat right = cv::imread(images_left[i], -1);
+        cv::Mat right = cv::imread(images_right[i], -1);
         calibration.undistort(left, right, left, right);
 
         cv::Mat disparity_sc, disparity_f;
         matcher->compute(left, right, disparity_sc);
         disparity_sc.convertTo(disparity_f, CV_32FC1, 1./16.);
 
+        cv::Mat xyz;
+        cv::reprojectImageTo3D(disparity_f, xyz, calibration.Q_, true);
 
+        using Point      = pcl::PointXYZRGB;
+        using PointCloud = pcl::PointCloud<Point>;
 
-
-//        parameters.addParameter(param::ParameterFactory::declareValue("frame_id", std::string("")),
-//                                frame_id_);
-//        parameters.addParameter(param::ParameterFactory::declareRange("maximum_depth", 0.0, 100.0, 0.0, 0.01),
-//                                maximum_depth_);
-
-
-//        PointCloudMessage::Ptr out_point_cloud(new PointCloudMessage(in_disparity->frame_id,
-//                                                                     in_disparity->stamp_micro_seconds));
-//        if(frame_id_ != "") {
-//            out_point_cloud->frame_id = frame_id_;
-//        }
-
-//        if(!Q_.empty()) {
-//            cv::Mat xyz;
-//            cv::reprojectImageTo3D(in_disparity->value, xyz, Q_, false);
-
-//            using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
-//            PointCloud::Ptr pointcloud(new PointCloud);
-//            pointcloud->points.resize(xyz.rows * xyz.cols);
-//            pointcloud->height = xyz.rows;
-//            pointcloud->width  = xyz.cols;
-//            for(int i = 0 ; i < xyz.rows; ++i) {
-//                for(int j = 0 ; j < xyz.cols ; ++j) {
-//                    const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);
-//                    const float depth = std::sqrt(pxyz.x * pxyz.x +
-//                                                  pxyz.y * pxyz.y +
-//                                                  pxyz.z * pxyz.z);
-//                    if(depth > 0.0 ||
-//                            depth < maximum_depth_) {
-//                        pcl::PointXYZ & p = pointcloud->at(j,i);
-//                        p.x = pxyz.x;
-//                        p.y = pxyz.y;
-//                        p.z = pxyz.z;
-//                    }
-//                }
-//            }
-//            out_point_cloud->value = pointcloud;
-//        } else {
-//            throw std::runtime_error("Need the stereo calibration to reproject points!");
-//        }
-
-//        msg::publish(output_point_cloud_, out_point_cloud);
-
-
+        PointCloud::Ptr pointcloud(new PointCloud);
+        pointcloud->points.resize(xyz.rows * xyz.cols);
+        pointcloud->height = xyz.rows;
+        pointcloud->width  = xyz.cols;
+        for(int i = 0 ; i < xyz.rows; ++i) {
+            for(int j = 0 ; j < xyz.cols ; ++j) {
+                const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);
+                const unsigned char g  = left.at<unsigned char>(i,j);
+                const float depth = std::sqrt(pxyz.dot(pxyz));
+                if(depth <= max_depth) {
+                    Point &p = pointcloud->at(j,i);
+                    p.x = pxyz.x;
+                    p.y = pxyz.y;
+                    p.z = pxyz.z;
+                    p.r = g;
+                    p.g = g;
+                    p.b = g;
+                }
+            }
+        }
 
         if(debug) {
             cv::Mat display_disparity;
@@ -306,10 +387,15 @@ int main(int argc, char *argv[])
             cv::imshow("right", right);
             cv::imshow("disparity", display_disparity);
             cv::waitKey(19);
+
+            if(!viewer->wasStopped()) {
+                viewer->showCloud(pointcloud);
+            }
         }
+
+        /// let's write this to a bag file
     }
-
-
+    cv::destroyAllWindows();
 
     return 0;
 }
