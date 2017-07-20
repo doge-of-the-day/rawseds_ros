@@ -5,8 +5,19 @@ ADD_DEFINITIONS(
     -std=c++11 # Or -std=c++0x
 )
 
-find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
-find_package(catkin REQUIRED camera_info_manager cmake_modules cv_bridge geometry_msgs image_transport rosbag roscpp sensor_msgs tf_conversions)
+find_package(Boost COMPONENTS program_options REQUIRED)
+find_package(catkin REQUIRED
+    camera_info_manager
+    cmake_modules
+    cv_bridge
+    geometry_msgs
+    image_transport
+    rosbag
+    roscpp
+    sensor_msgs
+    tf_conversions
+)
+
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -24,16 +35,9 @@ set(COMMON_LIBRARIES
   ${OpenCV_LIBS}
 )
 
-add_executable(camera2bag src/camera2bag.cpp)
-target_link_libraries(camera2bag ${COMMON_LIBRARIES})
-
-
-add_executable(tune_stereo_matching
-    src/tune_stereo_matching.cpp
+add_executable(stereo2bag
+    src/stereo2bag.cpp
 )
-target_link_libraries(tune_stereo_matching ${COMMON_LIBRARIES})
-
-add_executable(stereo_match
-    src/stereo_match.cpp
+target_link_libraries(stereo2bag
+    ${COMMON_LIBRARIES}
 )
-target_link_libraries(stereo_match ${COMMON_LIBRARIES})
