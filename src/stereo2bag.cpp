@@ -9,6 +9,9 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+
 namespace po = boost::program_options;
 namespace bf = boost::filesystem;
 
@@ -248,10 +251,57 @@ int main(int argc, char *argv[])
         matcher->compute(left, right, disparity_sc);
         disparity_sc.convertTo(disparity_f, CV_32FC1, 1./16.);
 
+
+
+
+//        parameters.addParameter(param::ParameterFactory::declareValue("frame_id", std::string("")),
+//                                frame_id_);
+//        parameters.addParameter(param::ParameterFactory::declareRange("maximum_depth", 0.0, 100.0, 0.0, 0.01),
+//                                maximum_depth_);
+
+
+//        PointCloudMessage::Ptr out_point_cloud(new PointCloudMessage(in_disparity->frame_id,
+//                                                                     in_disparity->stamp_micro_seconds));
+//        if(frame_id_ != "") {
+//            out_point_cloud->frame_id = frame_id_;
+//        }
+
+//        if(!Q_.empty()) {
+//            cv::Mat xyz;
+//            cv::reprojectImageTo3D(in_disparity->value, xyz, Q_, false);
+
+//            using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
+//            PointCloud::Ptr pointcloud(new PointCloud);
+//            pointcloud->points.resize(xyz.rows * xyz.cols);
+//            pointcloud->height = xyz.rows;
+//            pointcloud->width  = xyz.cols;
+//            for(int i = 0 ; i < xyz.rows; ++i) {
+//                for(int j = 0 ; j < xyz.cols ; ++j) {
+//                    const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);
+//                    const float depth = std::sqrt(pxyz.x * pxyz.x +
+//                                                  pxyz.y * pxyz.y +
+//                                                  pxyz.z * pxyz.z);
+//                    if(depth > 0.0 ||
+//                            depth < maximum_depth_) {
+//                        pcl::PointXYZ & p = pointcloud->at(j,i);
+//                        p.x = pxyz.x;
+//                        p.y = pxyz.y;
+//                        p.z = pxyz.z;
+//                    }
+//                }
+//            }
+//            out_point_cloud->value = pointcloud;
+//        } else {
+//            throw std::runtime_error("Need the stereo calibration to reproject points!");
+//        }
+
+//        msg::publish(output_point_cloud_, out_point_cloud);
+
+
+
         if(debug) {
             cv::Mat display_disparity;
             cv::normalize(disparity_f, display_disparity, 0.0, 1.0, cv::NORM_MINMAX);
-
             cv::imshow("left", left);
             cv::imshow("right", right);
             cv::imshow("disparity", display_disparity);

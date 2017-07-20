@@ -20,6 +20,7 @@ find_package(catkin REQUIRED
 
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(PCL REQUIRED)
 
 catkin_package()
 
@@ -27,12 +28,14 @@ include_directories(
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIR}
+  ${PCL_INCLUDE_DIRS}
 )
 
 set(COMMON_LIBRARIES
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
+  ${PCL_LIBRARIES}
 )
 
 add_executable(stereo2bag
