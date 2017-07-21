@@ -16,6 +16,7 @@ find_package(catkin REQUIRED
     roscpp
     sensor_msgs
     tf_conversions
+    stereo_msgs
 )
 
 find_package(Eigen3 REQUIRED)

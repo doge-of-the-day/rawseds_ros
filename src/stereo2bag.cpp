@@ -8,6 +8,8 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <stereo_msgs/DisparityImage.h>
+#include <sensor_msgs/distortion_models.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -124,19 +126,67 @@ struct Calibration {
     cv::Mat map_left_1_, map_left_2_;
     cv::Mat map_right_1_, map_right_2_;
 
+    void copyTo(sensor_msgs::CameraInfo &left_info,
+                sensor_msgs::CameraInfo &right_info)
+    {
+        /// left side
+        left_info.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        distortion_left_.copyTo(left_info.D);
+        for(std::size_t i = 0 ; i < 9 ; ++i) {
+            left_info.K[i] = distortion_left_.at<double>(i);
+        }
+        for(std::size_t i = 0 ; i < 9 ; ++i) {
+            left_info.R[i] = R_left_.at<double>(i);
+        }
+        for(std::size_t i = 0 ; i < 12 ; ++i) {
+            left_info.P[i] = P_left_.at<double>(i);
+        }
+
+        /// right side
+        right_info.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        distortion_left_.copyTo(right_info.D);
+        for(std::size_t i = 0 ; i < 9 ; ++i) {
+            right_info.K[i] = distortion_right_.at<double>(i);
+        }
+        for(std::size_t i = 0 ; i < 9 ; ++i) {
+            right_info.R[i] = R_right_.at<double>(i);
+        }
+        for(std::size_t i = 0 ; i < 12 ; ++i) {
+            right_info.P[i] = R_right_.at<double>(i);
+        }
+    }
+
     void read(cv::FileStorage &fs)
     {
+        auto check_depth = [](const std::string &name,
+                const cv::Mat &mat)
+        {
+            if(mat.type() != CV_64FC1)
+                throw std::runtime_error("Matrix '" + name + "' has to be double precision!");
+        };
+
         fs["intrinsics_left"]   >> intrinsics_left_;
+        check_depth("intrinsics_left", intrinsics_left_);
         fs["distortion_left"]   >> distortion_left_;
+        check_depth("distortion_left", distortion_left_);
         fs["intrinsics_right"]  >> intrinsics_right_;
+        check_depth("intrinsics_right", intrinsics_right_);
         fs["distortion_right"]  >> distortion_right_;
+        check_depth("distortion_right", distortion_right_);
         fs["P_left"]            >> P_left_;
+        check_depth("P_left", P_left_);
         fs["R_left"]            >> R_left_;
+        check_depth("R_left", R_left_);
         fs["P_right"]           >> P_right_;
+        check_depth("P_right", P_right_);
         fs["R_right"]           >> R_right_;
+        check_depth("R_right", R_right_);
         fs["R"]                 >> R_;
+        check_depth("R", R_);
         fs["T"]                 >> T_;
+        check_depth("T", T_);
         fs["Q"]                 >> Q_;
+        check_depth("Q", Q_);
     }
 
     void undistort(const cv::Mat &left, const cv::Mat &right,
@@ -334,13 +384,27 @@ int main(int argc, char *argv[])
 
     /// do the work
     const std::size_t size = images_left.size();
-    const std::string frame_id = "svs_l";
+    const std::string master_frame_id = "svs_l";
+    const std::string left_frame_id = "svs_l";
+    const std::string right_frame_id = "svs_r";
     const double      max_depth = 25.0;
 
     std::shared_ptr<pcl::visualization::CloudViewer> viewer;
     if(debug) {
         viewer.reset(new pcl::visualization::CloudViewer("PointCloud"));
     }
+
+    /// ros messages
+    sensor_msgs::CameraInfo     left_info_msg;
+    sensor_msgs::CameraInfo     right_info_msg;
+    left_info_msg.header.frame_id  = left_frame_id;
+    right_info_msg.header.frame_id = right_frame_id;
+    calibration.copyTo(left_info_msg, right_info_msg);
+
+    sensor_msgs::Image          left_image_msg;
+    sensor_msgs::Image          right_image_msg;
+    stereo_msgs::DisparityImage disparity_image_msg;
+
 
     for(std::size_t i = 0 ; i < size ; ++i) {
         const double stamp_left = images_left_stamps[i];
@@ -394,6 +458,8 @@ int main(int argc, char *argv[])
         }
 
         /// let's write this to a bag file
+
+
     }
     cv::destroyAllWindows();
 
