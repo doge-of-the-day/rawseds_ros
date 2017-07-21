@@ -10,6 +10,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <stereo_msgs/DisparityImage.h>
 #include <sensor_msgs/distortion_models.h>
+#include <sensor_msgs/image_encodings.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -154,6 +155,11 @@ struct Calibration {
         for(std::size_t i = 0 ; i < 12 ; ++i) {
             right_info.P[i] = R_right_.at<double>(i);
         }
+    }
+
+    inline double baseline() const
+    {
+      return -T_.at<double>(0);
     }
 
     void read(cv::FileStorage &fs)
@@ -394,28 +400,57 @@ int main(int argc, char *argv[])
         viewer.reset(new pcl::visualization::CloudViewer("PointCloud"));
     }
 
-    /// ros messages
+    /// CAMERA INFO
     sensor_msgs::CameraInfo     left_info_msg;
     sensor_msgs::CameraInfo     right_info_msg;
     left_info_msg.header.frame_id  = left_frame_id;
     right_info_msg.header.frame_id = right_frame_id;
     calibration.copyTo(left_info_msg, right_info_msg);
 
-    sensor_msgs::Image          left_image_msg;
-    sensor_msgs::Image          right_image_msg;
-    stereo_msgs::DisparityImage disparity_image_msg;
+    /// IMAGE MESSAGES
+    sensor_msgs::Image left_image_msg;
+    sensor_msgs::Image right_image_msg;
+    sensor_msgs::Image left_image_rectified_msg;
+    sensor_msgs::Image right_image_rectified_msg;
+    left_image_msg.header                  = left_info_msg.header;
+    left_image_msg.encoding                = sensor_msgs::image_encodings::MONO8;
+    left_image_msg.is_bigendian            = 0;
+    right_image_msg.header                 = right_image_msg.header;
+    right_image_msg.encoding               = sensor_msgs::image_encodings::MONO8;
+    right_image_msg.is_bigendian           = 0;
+    left_image_rectified_msg.header        = left_info_msg.header;
+    left_image_rectified_msg.encoding      = sensor_msgs::image_encodings::MONO8;
+    left_image_rectified_msg.is_bigendian  = 0;
+    right_image_rectified_msg.header       = right_image_msg.header;
+    right_image_rectified_msg.encoding     = sensor_msgs::image_encodings::MONO8;
+    right_image_rectified_msg.is_bigendian = 0;
 
+    /// DISPARITY MESSAGE
+    stereo_msgs::DisparityImage disparity_image_msg;
+    disparity_image_msg.header = left_info_msg.header;
+    disparity_image_msg.image.header = left_info_msg.header;
+    disparity_image_msg.image.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+    disparity_image_msg.image.is_bigendian = 0ul;
+    disparity_image_msg.min_disparity = matcher->getMinDisparity();
+    disparity_image_msg.max_disparity = matcher->getMinDisparity() + matcher->getNumDisparities() - 1;
+    disparity_image_msg.delta_d = 1.0 / 16.0;
+    disparity_image_msg.f = calibration.intrinsics_right_.at<double>(0);
+    disparity_image_msg.T = calibration.baseline();
 
     for(std::size_t i = 0 ; i < size ; ++i) {
         const double stamp_left = images_left_stamps[i];
         const double stamp_right= images_right_stamps[i];
-        cv::Mat left  = cv::imread(images_left[i], -1);
-        cv::Mat right = cv::imread(images_right[i], -1);
-        calibration.undistort(left, right, left, right);
+        cv::Mat left_rectified, right_rectified;
+        cv::Mat left  = cv::imread(images_left[i], CV_LOAD_IMAGE_GRAYSCALE);
+        cv::Mat right = cv::imread(images_right[i], CV_LOAD_IMAGE_GRAYSCALE);
+        calibration.undistort(left, right, left_rectified, right_rectified);
 
         cv::Mat disparity_sc, disparity_f;
-        matcher->compute(left, right, disparity_sc);
-        disparity_sc.convertTo(disparity_f, CV_32FC1, 1./16.);
+        matcher->compute(left_rectified, right_rectified, disparity_sc);
+        // We convert from fixed-point to float disparity and also adjust for any x-offset between
+        // the principal points: d = d_fp*inv_dpp - (cx_l - cx_r)
+        disparity_sc.convertTo(disparity_f, CV_32FC1, 1./16., -(calibration.intrinsics_left_.at<double>(0,2) -
+                                                                calibration.intrinsics_right_.at<double>(0,2)));
 
         cv::Mat xyz;
         cv::reprojectImageTo3D(disparity_f, xyz, calibration.Q_, true);
@@ -430,7 +465,7 @@ int main(int argc, char *argv[])
         for(int i = 0 ; i < xyz.rows; ++i) {
             for(int j = 0 ; j < xyz.cols ; ++j) {
                 const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);
-                const unsigned char g  = left.at<unsigned char>(i,j);
+                const unsigned char g  = left_rectified.at<unsigned char>(i,j);
                 const float depth = std::sqrt(pxyz.dot(pxyz));
                 if(depth <= max_depth) {
                     Point &p = pointcloud->at(j,i);
@@ -447,8 +482,8 @@ int main(int argc, char *argv[])
         if(debug) {
             cv::Mat display_disparity;
             cv::normalize(disparity_f, display_disparity, 0.0, 1.0, cv::NORM_MINMAX);
-            cv::imshow("left", left);
-            cv::imshow("right", right);
+            cv::imshow("left", left_rectified);
+            cv::imshow("right", right_rectified);
             cv::imshow("disparity", display_disparity);
             cv::waitKey(19);
 
@@ -457,9 +492,27 @@ int main(int argc, char *argv[])
             }
         }
 
-        /// let's write this to a bag file
+        /// BAG FILE
+        /// Disparity
+        sensor_msgs::Image &disparity_image = disparity_image_msg.image;
+        disparity_image.width = disparity_f.cols;
+        disparity_image.height= disparity_f.rows;
+        disparity_image.step = disparity_image.width * sizeof(float);
+        disparity_image.data.resize(disparity_image.step * disparity_image.height);
+        disparity_f.copyTo(disparity_image.data);
+        /// left and right images
+
+        /// left and right images undistorted
+
+        /// camera information
 
 
+        disparity_image_msg.header.stamp;
+        disparity_image.header.stamp;
+        left_image_msg.header.stamp;
+        right_image_msg.header.stamp;
+        left_image_rectified_msg.header.stamp;
+        right_image_rectified_msg.header.stamp;
     }
     cv::destroyAllWindows();
 
