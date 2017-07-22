@@ -12,6 +12,8 @@
 #include <sensor_msgs/distortion_models.h>
 #include <sensor_msgs/image_encodings.h>
 
+#include <rosbag/bag.h>
+
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/visualization/cloud_viewer.h>
@@ -107,6 +109,7 @@ bool parseCommandline(int   argc,
         path_svs_r = bf::path(vm["right"].as<std::string>());
         path_calibration = bf::path(vm["calibration"].as<std::string>());
         path_matcher = bf::path(vm["matcher"].as<std::string>());
+        path_bagfile = bf::path(vm["output"].as<std::string>());
 
         return true;
     } catch(const po::error &e) {
@@ -390,7 +393,6 @@ int main(int argc, char *argv[])
 
     /// do the work
     const std::size_t size = images_left.size();
-    const std::string master_frame_id = "svs_l";
     const std::string left_frame_id = "svs_l";
     const std::string right_frame_id = "svs_r";
     const double      max_depth = 25.0;
@@ -436,6 +438,28 @@ int main(int argc, char *argv[])
     disparity_image_msg.delta_d = 1.0 / 16.0;
     disparity_image_msg.f = calibration.intrinsics_right_.at<double>(0);
     disparity_image_msg.T = calibration.baseline();
+
+    auto copyImagetoMsg = [](const cv::Mat &matrix,
+                             const std::size_t byte_size,
+                             sensor_msgs::Image &image)
+    {
+        image.width  = matrix.cols;
+        image.height = matrix.rows;
+        image.step   = matrix.cols * byte_size;
+        image.data.resize(image.step * image.height);
+
+        const uint8_t *matrix_ptr = matrix.ptr<uint8_t>();
+        uint8_t *image_ptr = image.data.data();
+
+        const std::size_t size = image.height * image.step;
+        for(std::size_t i = 0 ; i < size ; ++i) {
+            image_ptr[i] = matrix_ptr[i];
+        }
+    };
+
+    /// bag outputfile
+    rosbag::Bag bag;
+    bag.open(path_bagfile.string(), rosbag::bagmode::Write);
 
     for(std::size_t i = 0 ; i < size ; ++i) {
         const double stamp_left = images_left_stamps[i];
@@ -495,25 +519,86 @@ int main(int argc, char *argv[])
         /// BAG FILE
         /// Disparity
         sensor_msgs::Image &disparity_image = disparity_image_msg.image;
-        disparity_image.width = disparity_f.cols;
-        disparity_image.height= disparity_f.rows;
-        disparity_image.step = disparity_image.width * sizeof(float);
-        disparity_image.data.resize(disparity_image.step * disparity_image.height);
-        disparity_f.copyTo(disparity_image.data);
+        copyImagetoMsg(disparity_f, sizeof(float), disparity_image);
         /// left and right images
-
+        copyImagetoMsg(left, sizeof(uint8_t), left_image_msg);
+        copyImagetoMsg(right, sizeof(uint8_t), right_image_msg);
         /// left and right images undistorted
+        copyImagetoMsg(left_rectified, sizeof(uint8_t), left_image_rectified_msg);
+        copyImagetoMsg(right_rectified, sizeof(uint8_t), right_image_rectified_msg);
+        /// the pointcloud
+        sensor_msgs::PointCloud2 pointcloud_msg;
+        pcl::toROSMsg(*pointcloud, pointcloud_msg);
 
-        /// camera information
+        double stamp_match = std::max(stamp_left, stamp_right);
+        /// time stamp disparity
+        disparity_image_msg.header.stamp.fromSec(stamp_match);
+        disparity_image.header.stamp.fromSec(stamp_match);
+        /// time stamp images
+        left_image_msg.header.stamp.fromSec(stamp_left);
+        right_image_msg.header.stamp.fromSec(stamp_right);
+        left_image_rectified_msg.header.stamp.fromSec(stamp_left);
+        right_image_rectified_msg.header.stamp.fromSec(stamp_right);
+        left_info_msg.header.stamp.fromSec(stamp_left);
+        right_info_msg.header.stamp.fromSec(stamp_right);
+        /// point cloud
+        pointcloud_msg.header.stamp.fromSec(stamp_match);
+        pointcloud_msg.header.frame_id = left_frame_id;
 
-
-        disparity_image_msg.header.stamp;
-        disparity_image.header.stamp;
-        left_image_msg.header.stamp;
-        right_image_msg.header.stamp;
-        left_image_rectified_msg.header.stamp;
-        right_image_rectified_msg.header.stamp;
+        /// write that out
+        if(stamp_left < stamp_right) {
+            bag.write("svs_l/mono",
+                      left_image_msg.header.stamp,
+                      left_image_msg);
+            bag.write("svs_l/mono_rectified",
+                      left_image_rectified_msg.header.stamp,
+                      left_image_rectified_msg);
+            bag.write("svs_l/camera_info",
+                      left_info_msg.header.stamp,
+                      left_info_msg);
+            bag.write("svs_r/mono",
+                      right_image_msg.header.stamp,
+                      right_image_msg);
+            bag.write("svs_r/mono_rectified",
+                      right_image_rectified_msg.header.stamp,
+                      right_image_rectified_msg);
+            bag.write("svs_r/camera_info",
+                      right_info_msg.header.stamp,
+                      right_info_msg);
+            bag.write("svs/disparity",
+                      disparity_image_msg.header.stamp,
+                      disparity_image_msg);
+            bag.write("svs/pointcloud",
+                      pointcloud_msg.header.stamp,
+                      pointcloud_msg);
+        } else {
+            bag.write("svs_r/mono",
+                      right_image_msg.header.stamp,
+                      right_image_msg);
+            bag.write("svs_r/mono_rectified",
+                      right_image_rectified_msg.header.stamp,
+                      right_image_rectified_msg);
+            bag.write("svs_r/camera_info",
+                      right_info_msg.header.stamp,
+                      right_info_msg);
+            bag.write("svs_l/mono",
+                      left_image_msg.header.stamp,
+                      left_image_msg);
+            bag.write("svs_l/mono_rectified",
+                      left_image_rectified_msg.header.stamp,
+                      left_image_rectified_msg);
+            bag.write("svs_l/camera_info",
+                      left_info_msg.header.stamp,
+                      left_info_msg);
+            bag.write("svs/disparity",
+                      disparity_image_msg.header.stamp,
+                      disparity_image_msg);
+            bag.write("svs/pointcloud",
+                      pointcloud_msg.header.stamp,
+                      pointcloud_msg);
+        }
     }
+    bag.close();
     cv::destroyAllWindows();
 
     return 0;
