@@ -7,7 +7,7 @@ import geometry_msgs.msg
 
 
 def main():
-    parser = argparse.ArgumentParser(description='convert rawseeds ground truth to ROS bag file')
+    parser = argparse.ArgumentParser(description='convert rawseeds ground truth odometry to ROS bag file')
     parser.add_argument('input', help='input rawseeds ground truth file')
     parser.add_argument('output', help='name of output bag file')
     parser.add_argument('--frame_id', type=str, default="world", help='frame_id for gt data')

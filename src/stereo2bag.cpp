@@ -52,7 +52,9 @@ bool parseCommandline(int   argc,
                       bf::path &path_calibration,
                       bf::path &path_matcher,
                       bf::path &path_bagfile,
-                      bool     &debug)
+                      bool     &debug,
+                      bool     &points_only,
+                      bool     &images_only)
 {
     try {
         po::options_description desc{"Options"};
@@ -73,6 +75,8 @@ bool parseCommandline(int   argc,
                 ("output,o",
                  po::value<std::string>()->default_value(""),
                  "ouput bag file.")
+                ("pointsonly,p", "put only points into the bagfile")
+                ("imagesonly,i", "put only images into the bagfile")
                 ("debug,d", "debug output");
 
         po::variables_map vm;
@@ -103,6 +107,9 @@ bool parseCommandline(int   argc,
                 return false;
             }
             debug = vm.count("debug") == 1ul;
+            points_only = vm.count("pointsonly") == 1ul;
+            images_only = vm.count("imagesonly") == 1ul;
+            points_only &= !images_only;
         }
 
         path_svs_l = bf::path(vm["left"].as<std::string>());
@@ -162,7 +169,7 @@ struct Calibration {
 
     inline double baseline() const
     {
-      return -T_.at<double>(0);
+        return -T_.at<double>(0);
     }
 
     void read(cv::FileStorage &fs)
@@ -322,11 +329,15 @@ int main(int argc, char *argv[])
     bf::path path_matcher;
     bf::path path_bagfile;
     bool debug = false;
+    bool points_only = false;
+    bool images_only = false;
 
     if(!parseCommandline(argc, argv, path_svs_l, path_svs_r,
                          path_calibration, path_matcher,
                          path_bagfile,
-                         debug))
+                         debug,
+                         points_only,
+                         images_only))
         return 1;
 
     /// check input paths
@@ -365,6 +376,15 @@ int main(int argc, char *argv[])
     std::cout << "Putting the data out into " <<
                  path_bagfile
               << "." << std::endl;
+    if(debug) {
+        std::cout << "Giving you a debug output while converting." << std::endl;
+    }
+    if(points_only) {
+        std::cout << "Putting only points into the bag file." << std::endl;
+    }
+    if(images_only) {
+        std::cout << "Putting only images into the bag file." << std::endl;
+    }
 
     /// read the directories
     std::vector<std::string> images_left;
@@ -440,8 +460,8 @@ int main(int argc, char *argv[])
     disparity_image_msg.T = calibration.baseline();
 
     auto copyImagetoMsg = [](const cv::Mat &matrix,
-                             const std::size_t byte_size,
-                             sensor_msgs::Image &image)
+            const std::size_t byte_size,
+            sensor_msgs::Image &image)
     {
         image.width  = matrix.cols;
         image.height = matrix.rows;
@@ -547,56 +567,67 @@ int main(int argc, char *argv[])
 
         /// write that out
         if(stamp_left < stamp_right) {
-            bag.write("svs_l/mono",
-                      left_image_msg.header.stamp,
-                      left_image_msg);
-            bag.write("svs_l/mono_rectified",
-                      left_image_rectified_msg.header.stamp,
-                      left_image_rectified_msg);
-            bag.write("svs_l/camera_info",
-                      left_info_msg.header.stamp,
-                      left_info_msg);
-            bag.write("svs_r/mono",
-                      right_image_msg.header.stamp,
-                      right_image_msg);
-            bag.write("svs_r/mono_rectified",
-                      right_image_rectified_msg.header.stamp,
-                      right_image_rectified_msg);
-            bag.write("svs_r/camera_info",
-                      right_info_msg.header.stamp,
-                      right_info_msg);
-            bag.write("svs/disparity",
-                      disparity_image_msg.header.stamp,
-                      disparity_image_msg);
-            bag.write("svs/pointcloud",
-                      pointcloud_msg.header.stamp,
-                      pointcloud_msg);
+            if(!points_only) {
+                bag.write("svs_l/mono",
+                          left_image_msg.header.stamp,
+                          left_image_msg);
+                bag.write("svs_l/mono_rectified",
+                          left_image_rectified_msg.header.stamp,
+                          left_image_rectified_msg);
+                bag.write("svs_l/camera_info",
+                          left_info_msg.header.stamp,
+                          left_info_msg);
+                bag.write("svs_r/mono",
+                          right_image_msg.header.stamp,
+                          right_image_msg);
+                bag.write("svs_r/mono_rectified",
+                          right_image_rectified_msg.header.stamp,
+                          right_image_rectified_msg);
+                bag.write("svs_r/camera_info",
+                          right_info_msg.header.stamp,
+                          right_info_msg);
+                bag.write("svs/disparity",
+                          disparity_image_msg.header.stamp,
+                          disparity_image_msg);
+            }
+            if(!images_only) {
+                bag.write("svs/pointcloud",
+                          pointcloud_msg.header.stamp,
+                          pointcloud_msg);
+            }
         } else {
-            bag.write("svs_r/mono",
-                      right_image_msg.header.stamp,
-                      right_image_msg);
-            bag.write("svs_r/mono_rectified",
-                      right_image_rectified_msg.header.stamp,
-                      right_image_rectified_msg);
-            bag.write("svs_r/camera_info",
-                      right_info_msg.header.stamp,
-                      right_info_msg);
-            bag.write("svs_l/mono",
-                      left_image_msg.header.stamp,
-                      left_image_msg);
-            bag.write("svs_l/mono_rectified",
-                      left_image_rectified_msg.header.stamp,
-                      left_image_rectified_msg);
-            bag.write("svs_l/camera_info",
-                      left_info_msg.header.stamp,
-                      left_info_msg);
-            bag.write("svs/disparity",
-                      disparity_image_msg.header.stamp,
-                      disparity_image_msg);
-            bag.write("svs/pointcloud",
-                      pointcloud_msg.header.stamp,
-                      pointcloud_msg);
+            if(!points_only) {
+                bag.write("svs_r/mono",
+                          right_image_msg.header.stamp,
+                          right_image_msg);
+                bag.write("svs_r/mono_rectified",
+                          right_image_rectified_msg.header.stamp,
+                          right_image_rectified_msg);
+                bag.write("svs_r/camera_info",
+                          right_info_msg.header.stamp,
+                          right_info_msg);
+                bag.write("svs_l/mono",
+                          left_image_msg.header.stamp,
+                          left_image_msg);
+                bag.write("svs_l/mono_rectified",
+                          left_image_rectified_msg.header.stamp,
+                          left_image_rectified_msg);
+                bag.write("svs_l/camera_info",
+                          left_info_msg.header.stamp,
+                          left_info_msg);
+                bag.write("svs/disparity",
+                          disparity_image_msg.header.stamp,
+                          disparity_image_msg);
+            }
+            if(!images_only) {
+                bag.write("svs/pointcloud",
+                          pointcloud_msg.header.stamp,
+                          pointcloud_msg);
+            }
         }
+
+        std::cout << (i + 1) / static_cast<double>(size) * 100.0 << "% done..." << std::endl;
+
     }
     bag.close();
     cv::destroyAllWindows();
