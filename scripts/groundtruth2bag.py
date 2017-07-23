@@ -4,6 +4,7 @@ import numpy
 import rosbag
 import rospy
 import geometry_msgs.msg
+import sys
 
 
 def main():
@@ -22,6 +23,8 @@ def main():
 
     with rosbag.Bag(args.output, 'w') as out_bag:
         with open(args.input) as in_file:
+            count = len(in_file.readlines())
+            in_file.seek(0)
             for i, line in enumerate(in_file):
                 print(line)
 
@@ -66,6 +69,9 @@ def main():
                 out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
 
                 n_messages += 1
+
+                state = 'Progress: ' + '{0:.2f}'.format((i + 1) / (1.0 * count) * 100) + '%'
+                sys.stdout.write('%s\r' % state)
 
     print("Conversion of %d messages done." % n_messages)
     return

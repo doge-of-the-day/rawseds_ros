@@ -60,7 +60,7 @@ def main():
 
                 n_messages += 1
 
-                state = 'Progress: ' + '{0:.2f}'.format(i / (1.0 * count) * 100) + '%'
+                state = 'Progress: ' + '{0:.2f}'.format((i + 1) / (1.0 * count) * 100) + '%'
                 sys.stdout.write('%s\r' % state)
 
     print
