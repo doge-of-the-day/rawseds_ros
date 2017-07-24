@@ -12,8 +12,8 @@ def main():
     parser = argparse.ArgumentParser(description='convert rawseeds imu data to ROS bag file')
     parser.add_argument('input', help='input rawseeds file')
     parser.add_argument('output', help='name of output bag file')
-    parser.add_argument('--frame_id', type=str, default="hokuyo", help='frame_id for ROS message')
-    parser.add_argument('--topic', type=str, default="hokuyo", help='topic name for ROS message')
+    parser.add_argument('--frame_id', type=str, default="imu", help='frame_id for ROS message')
+    parser.add_argument('--topic', type=str, default="rawseeds_imu", help='topic name for ROS message')
 
     args = parser.parse_args()
 
@@ -32,7 +32,7 @@ def main():
                 # read line:
                 row = line.split(',')
 
-                t = float(row[0])           # 0: timestamp in SECONDS (doc incorrectly says microseconds)
+                t = float(row[0])           # 0: timestamp
                 s = int(row[1])             # 1: sample count
                 acc = map(float, row[2:5])  # 2,3,4: acceleration
                 vel = map(float, row[5:8])  # 5,6,7: velocity
