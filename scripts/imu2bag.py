@@ -5,6 +5,7 @@ import rosbag
 import rospy
 import sensor_msgs.msg
 import geometry_msgs.msg
+import rawseeds_ros.msg
 import tf
 import sys
 
@@ -48,26 +49,22 @@ def main():
 
 
                 # create message:
-                av_msg = sensor_msgs.msg.Imu()
-                av_msg.header.frame_id = args.frame_id
-                av_msg.header.stamp = rospy.Time.from_sec(t)
-                av_msg.angular_velocity.x = vel[0]
-                av_msg.angular_velocity.y = vel[1]
-                av_msg.angular_velocity.z = vel[2]
-                av_msg.linear_acceleration.x = acc[0]
-                av_msg.linear_acceleration.y = acc[1]
-                av_msg.linear_acceleration.z = acc[2]
+                msg = rawseeds_ros.msg.RawseedsIMU()
+                msg.header.frame_id = args.frame_id
+                msg.header.stamp = rospy.Time.from_sec(t)
+                msg.angular_velocity.x = vel[0]
+                msg.angular_velocity.y = vel[1]
+                msg.angular_velocity.z = vel[2]
+                msg.linear_acceleration.x = acc[0]
+                msg.linear_acceleration.y = acc[1]
+                msg.linear_acceleration.z = acc[2]
                 quat = tf.transformations.quaternion_from_matrix(rot_mat)
-                av_msg.orientation = geometry_msgs.msg.Quaternion(quat[0], quat[1], quat[2], quat[3])
+                msg.orientation = geometry_msgs.msg.Quaternion(quat[0], quat[1], quat[2], quat[3])
+                msg.magnetic_field.x = mag[0]
+                msg.magnetic_field.y = mag[1]
+                msg.magnetic_field.z = mag[2]
 
-                m_msg = sensor_msgs.msg.MagneticField()
-                m_msg.header = av_msg.header
-                m_msg.magnetic_field.x = mag[0]
-                m_msg.magnetic_field.y = mag[1]
-                m_msg.magnetic_field.z = mag[2]
-
-                out_bag.write(args.topic, av_msg, rospy.Time.from_sec(t))
-                out_bag.write(args.topic, m_msg, rospy.Time.from_sec(t))
+                out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
 
                 n_messages += 1
 

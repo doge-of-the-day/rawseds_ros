@@ -22,7 +22,10 @@ def main():
     parser = argparse.ArgumentParser(description='merge multiple bag files into one')
     parser.add_argument('-o', '--output', help='name of output bag file')
     parser.add_argument('-i', '--input', nargs='+', help='list of input bag files')
+
     args = parser.parse_args()
+
+    print(args.input)
 
     print('Input files:  ' + str(args.input))
     print('Output file: ' + args.output)

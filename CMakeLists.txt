@@ -14,16 +14,32 @@ find_package(catkin REQUIRED
     image_transport
     rosbag
     roscpp
+    rospy
     sensor_msgs
     tf_conversions
     stereo_msgs
+
+    message_generation
 )
 
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED)
 
-catkin_package()
+add_message_files(
+    FILES
+    RawseedsIMU.msg
+)
+
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+   geometry_msgs
+)
+
+catkin_package(
+    CATKIN_DEPENDS message_runtime rospy
+)
 
 include_directories(
   ${Boost_INCLUDE_DIR}
