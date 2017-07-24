@@ -3,7 +3,6 @@ import argparse
 import numpy
 import rosbag
 import rospy
-import sensor_msgs.msg
 import geometry_msgs.msg
 import rawseeds_ros.msg
 import tf
@@ -24,9 +23,6 @@ def main():
     print('topic:       ' + args.topic)
 
     n_messages = 0
-
-    max_range = 0.
-    min_range = 100.
 
     with rosbag.Bag(args.output, 'w') as out_bag:
         with open(args.input) as input_file:
@@ -71,11 +67,7 @@ def main():
                 state = 'Progress: ' + '{0:.2f}'.format((i + 1) / (1.0 * count) * 100) + '%'
                 sys.stdout.write('%s\r' % state)
 
-    print
     print("Conversion of %d messages done." % n_messages)
-    print("Min range seen: %f" % min_range)
-    print("Max range seen: %f" % max_range)
-
 
 if __name__ == "__main__":
     main()
