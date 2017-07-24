@@ -237,7 +237,6 @@ bool loadMatcher(const bf::path &path_matcher,
     cv::FileStorage fs(path_matcher.string(), cv::FileStorage::READ);
     cv::String matcher_type;
     fs["matcher_type"] >> matcher_type;
-    std::cerr << matcher_type << std::endl;
     if(matcher_type == "BM") {
         int min_disparity;
         int num_disparitites;
@@ -480,6 +479,9 @@ int main(int argc, char *argv[])
     /// bag outputfile
     rosbag::Bag bag;
     bag.open(path_bagfile.string(), rosbag::bagmode::Write);
+    bag.setCompression(rosbag::CompressionType::LZ4);
+
+    std::cout << "Starting generation..." << std::endl;
 
     for(std::size_t i = 0 ; i < size ; ++i) {
         const double stamp_left = images_left_stamps[i];
@@ -626,9 +628,10 @@ int main(int argc, char *argv[])
             }
         }
 
-        std::cout << (i + 1) / static_cast<double>(size) * 100.0 << "% done..." << std::endl;
+        std::cout << "\r" << (i + 1) / static_cast<double>(size) * 100.0 << "% done..."  << std::flush;
 
     }
+    std::cout << std::endl;
     bag.close();
     cv::destroyAllWindows();
 
