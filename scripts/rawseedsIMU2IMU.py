@@ -27,17 +27,17 @@ def convert(data):
 
 def main():
     parser = argparse.ArgumentParser(description='online conversion from rawseeds imu messages to ros imu messages')
-    parser.add_argument('--input_topic', type=str, default="imu_rawseeds", help='input rawseeds imu topic')
+    parser.add_argument('--input_topic', type=str, default="rawseeds_imu", help='input rawseeds imu topic')
     parser.add_argument('--output_topic_imu', type=str, default="imu", help='output imu topic')
     parser.add_argument('--output_topic_mag', type=str, default="mag", help='output magneto meter topic')
 
-    args = parser.parse_args()
+    args, unkown = parser.parse_known_args()
 
-    print('input_topic:    ' + args.input_topic)
+    print('input_topic:    '     + args.input_topic)
     print('output_topic_imu:   ' + args.output_topic_imu)
     print('output_topic_mag:   ' + args.output_topic_mag)
 
-    rospy.init_node('rawseedsIMU2IMU')
+    rospy.init_node('rawseedsIMU2IMU', anonymous=True)
     rospy.Subscriber(args.input_topic, rawseeds_ros.msg.RawseedsIMU, convert)
 
     global pub_imu
