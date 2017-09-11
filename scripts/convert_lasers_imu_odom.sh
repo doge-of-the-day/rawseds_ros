@@ -14,7 +14,7 @@ if [ ! -f sick_rear.bag ] || [ "$1" = "--clean" ]; then
 fi
 if [ ! -f sick_front.bag ] || [ "$1" = "--clean" ]; then
     echo "Converting SICK laserscanner front!"
-    rosrun rawseeds_ros sick2bag.py --frame_id sick_front --topic /sick/front *SICK_FRONT.csv sick_rear.bag
+    rosrun rawseeds_ros sick2bag.py --frame_id sick_front --topic /sick/front *SICK_FRONT.csv sick_front.bag
 fi
 if [ ! -f hokuyo_rear.bag ] || [ "$1" = "--clean" ] then
     echo "Converting Hokuyo laserscanner rear!"
