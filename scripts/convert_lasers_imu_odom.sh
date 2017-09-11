@@ -24,7 +24,7 @@ if [ ! -f hokuyo_front.bag ] || [ "$1" = "--clean" ] ; then
     echo "Converting Hokuyo laserscanner rear!"
     rosrun rawseeds_ros hokuyo2bag.py --frame_id hokuyo_front --topic /hokuyo/front *HOKUYO_FRONT.csv hokuyo_front.bag
 fi
-rosrun rawseeds_ros merge_bags.py -i odom.bag imu.bag sick_rear.bag sick_front.bag hokuyo_front.bag hokuyo_back.bag -o $bag
+rosrun rawseeds_ros merge_bags.py -i odom.bag imu.bag sick_rear.bag sick_front.bag hokuyo_front.bag hokuyo_rear.bag -o $bag
 
 
 
