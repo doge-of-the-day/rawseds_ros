@@ -1,6 +1,6 @@
 #!/bin/bash
 bag=${PWD##*/}-groundtruth.bag
-if [ ! -f odom.bag ] || [ "$1" = "--clean" ]; then
+if [ ! -f odom_gt.bag ] || [ "$1" = "--clean" ]; then
     echo "Converting ground truth odometry!"
     rosrun rawseeds_ros gtextodom2bag.py --frame_id odom --topic /odom *GROUNDTRUTH.csv odom_gt.bag
 fi
