@@ -37,7 +37,7 @@ void readImageDirectory(const bf::path &path,
             image_paths.emplace_back(p.string());
             image_stamps.emplace_back(boost::lexical_cast<double>(stamp));
         } else {
-            std::cerr << "Recursive inputs are not supported!" << std::endl;
+            std::cerr << "Recursive inputs are not supported!" << "\n";
             std::cerr << "'" << p << "' is omitted.";
         }
     }
@@ -83,27 +83,27 @@ bool parseCommandline(int   argc,
         po::store(po::parse_command_line(argc, argv, desc), vm);
 
         if(vm.count("help") == 1ul) {
-            std::cout << desc << std::endl;
+            std::cout << desc << "\n";
             return false;
         } else {
             if(vm.count("left") == 0ul) {
-                std::cerr << "Missing path to folder with images of the left camera of the stereo system." << std::endl;
+                std::cerr << "Missing path to folder with images of the left camera of the stereo system." << "\n";
                 return false;
             }
             if(vm.count("right") == 0ul) {
-                std::cerr << "Missing path to folder with images of the right camera of the stereo system." << std::endl;
+                std::cerr << "Missing path to folder with images of the right camera of the stereo system." << "\n";
                 return false;
             }
             if(vm.count("calibration") == 0ul) {
-                std::cerr << "Missing path to the calibration file of the stereo system." << std::endl;
+                std::cerr << "Missing path to the calibration file of the stereo system." << "\n";
                 return false;
             }
             if(vm.count("matcher") == 0ul) {
-                std::cerr << "Missing path to the matcher which should be employed." << std::endl;
+                std::cerr << "Missing path to the matcher which should be employed." << "\n";
                 return false;
             }
             if(vm.count("output") == 0ul) {
-                std::cerr << "Missing path for the output bagfile." << std::endl;
+                std::cerr << "Missing path for the output bagfile." << "\n";
                 return false;
             }
             debug = vm.count("debug") == 1ul;
@@ -120,7 +120,7 @@ bool parseCommandline(int   argc,
 
         return true;
     } catch(const po::error &e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << e.what() << "\n";
     }
     return false;
 }
@@ -222,7 +222,7 @@ struct Calibration {
                                         R_right_, P_right_,
                                         size, CV_16SC2, map_right_1_, map_right_2_);
         } else if(size_ != size) {
-            std::cerr << "Images of size " << size << " not matching found " << size_ << " !" << std::endl;
+            std::cerr << "Images of size " << size << " not matching found " << size_ << " !" << "\n";
             return;
         }
 
@@ -312,7 +312,7 @@ bool loadMatcher(const bf::path &path_matcher,
                                            mode);
         matcher = sgbm;
     } else {
-        std::cerr << "Unknown matcher type." << std::endl;
+        std::cerr << "Unknown matcher type." << "\n";
         return false;
     }
     fs.release();
@@ -341,48 +341,48 @@ int main(int argc, char *argv[])
 
     /// check input paths
     if(!bf::is_directory(path_svs_l)) {
-        std::cerr << path_svs_l << " is not a folder!" << std::endl;
+        std::cerr << path_svs_l << " is not a folder!" << "\n";
         return 1;
     }
     if(!bf::is_directory(path_svs_r)) {
-        std::cerr << path_svs_r << " is not a folder!" << std::endl;
+        std::cerr << path_svs_r << " is not a folder!" << "\n";
         return 1;
     }
     if(!bf::is_regular_file(path_calibration)) {
-        std::cerr << path_calibration << " is not a file!" << std::endl;
+        std::cerr << path_calibration << " is not a file!" << "\n";
         return 1;
     }
     if(!bf::is_regular_file(path_matcher)) {
-        std::cerr << path_matcher << " is not a file!" << std::endl;
+        std::cerr << path_matcher << " is not a file!" << "\n";
         return 1;
     }
 
     std::cout << "Current path " <<
                  bf::current_path()
-              << "." << std::endl;
+              << "." << "\n";
     std::cout << "Using left input images from folder " <<
                  path_svs_l
-              << "." << std::endl;
+              << "." << "\n";
     std::cout << "Using right input images from folder " <<
                  path_svs_r
-              << "." << std::endl;
+              << "." << "\n";
     std::cout << "Using stereo camera calibration " <<
                  path_calibration
-              << "." << std::endl;
+              << "." << "\n";
     std::cout << "Using stereo matcher configuration " <<
                  path_matcher
-              << "." << std::endl;
+              << "." << "\n";
     std::cout << "Putting the data out into " <<
                  path_bagfile
-              << "." << std::endl;
+              << "." << "\n";
     if(debug) {
-        std::cout << "Giving you a debug output while converting." << std::endl;
+        std::cout << "Giving you a debug output while converting." << "\n";
     }
     if(points_only) {
-        std::cout << "Putting only points into the bag file." << std::endl;
+        std::cout << "Putting only points into the bag file." << "\n";
     }
     if(images_only) {
-        std::cout << "Putting only images into the bag file." << std::endl;
+        std::cout << "Putting only images into the bag file." << "\n";
     }
 
     /// read the directories
@@ -394,7 +394,7 @@ int main(int argc, char *argv[])
     readImageDirectory(path_svs_r, images_right, images_right_stamps);
 
     if(images_left.size() != images_right.size()) {
-        std::cerr << "There must be the same amount of images in the folders." << std::endl;
+        std::cerr << "There must be the same amount of images in the folders." << "\n";
         return 1;
     }
     /// read the calibration
@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
     cv::Ptr<cv::StereoMatcher> matcher;
     if(!loadMatcher(path_matcher,
                     matcher)) {
-        std::cerr << "Could not load matcher!" << std::endl;
+        std::cerr << "Could not load matcher!" << "\n";
         return 1;
     }
 
@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
     bag.open(path_bagfile.string(), rosbag::bagmode::Write);
     bag.setCompression(rosbag::CompressionType::LZ4);
 
-    std::cout << "Starting generation..." << std::endl;
+    std::cout << "Starting generation..." << "\n";
 
     for(std::size_t i = 0 ; i < size ; ++i) {
         const double stamp_left = images_left_stamps[i];
@@ -631,7 +631,7 @@ int main(int argc, char *argv[])
         std::cout << "\r" << (i + 1) / static_cast<double>(size) * 100.0 << "% done..."  << std::flush;
 
     }
-    std::cout << std::endl;
+    std::cout << "\n";
     bag.close();
     cv::destroyAllWindows();
 
