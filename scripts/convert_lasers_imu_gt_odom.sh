@@ -2,7 +2,7 @@
 bag=${PWD##*/}-groundtruth.bag
 if [ ! -f odom_gt.bag ] || [ "$1" = "--clean" ]; then
     echo "Converting ground truth odometry!"
-    rosrun rawseeds_ros gtextodom2bag.py --frame_id odom --topic /odom *GROUNDTRUTH.csv odom_gt.bag
+    rosrun rawseeds_ros gtextodom2bag.py --frame_id odom --topic /odom *GT-extended.csv odom_gt.bag
 fi
 if [ ! -f imu.bag ] || [ "$1" = "--clean" ] ; then
     echo "Converting IMU!"
