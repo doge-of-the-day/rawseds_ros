@@ -47,14 +47,15 @@ void readImageDirectory(const bf::path &path,
 
 bool parseCommandline(int   argc,
                       char *argv[],
-                      bf::path &path_svs_l,
-                      bf::path &path_svs_r,
-                      bf::path &path_calibration,
-                      bf::path &path_matcher,
-                      bf::path &path_bagfile,
-                      bool     &debug,
-                      bool     &points_only,
-                      bool     &images_only)
+                      bf::path      &path_svs_l,
+                      bf::path      &path_svs_r,
+                      bf::path      &path_calibration,
+                      bf::path      &path_matcher,
+                      bf::path      &path_bagfile,
+                      bool          &debug,
+                      bool          &points_only,
+                      bool          &images_only,
+                      std::size_t   &split_size)
 {
     try {
         po::options_description desc{"Options"};
@@ -77,6 +78,7 @@ bool parseCommandline(int   argc,
                  "ouput bag file.")
                 ("pointsonly,p", "put only points into the bagfile")
                 ("imagesonly,i", "put only images into the bagfile")
+                ("split,s", "split up bag file into bags of this byte size")
                 ("debug,d", "debug output");
 
         po::variables_map vm;
@@ -117,6 +119,8 @@ bool parseCommandline(int   argc,
         path_calibration = bf::path(vm["calibration"].as<std::string>());
         path_matcher = bf::path(vm["matcher"].as<std::string>());
         path_bagfile = bf::path(vm["output"].as<std::string>());
+        split_size = vm.count("split") == 1ul ? vm["split"].as<std::size_t>() : 0ul;
+
 
         return true;
     } catch(const po::error &e) {
@@ -144,26 +148,26 @@ struct Calibration {
         left_info.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
         distortion_left_.copyTo(left_info.D);
         for(std::size_t i = 0 ; i < 9 ; ++i) {
-            left_info.K[i] = distortion_left_.at<double>(i);
+            left_info.K[i] = distortion_left_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 9 ; ++i) {
-            left_info.R[i] = R_left_.at<double>(i);
+            left_info.R[i] = R_left_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 12 ; ++i) {
-            left_info.P[i] = P_left_.at<double>(i);
+            left_info.P[i] = P_left_.at<double>(static_cast<int>(i));
         }
 
         /// right side
         right_info.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
         distortion_left_.copyTo(right_info.D);
         for(std::size_t i = 0 ; i < 9 ; ++i) {
-            right_info.K[i] = distortion_right_.at<double>(i);
+            right_info.K[i] = distortion_right_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 9 ; ++i) {
-            right_info.R[i] = R_right_.at<double>(i);
+            right_info.R[i] = R_right_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 12 ; ++i) {
-            right_info.P[i] = R_right_.at<double>(i);
+            right_info.P[i] = R_right_.at<double>(static_cast<int>(i));
         }
     }
 
@@ -330,13 +334,15 @@ int main(int argc, char *argv[])
     bool debug = false;
     bool points_only = false;
     bool images_only = false;
+    std::size_t split_size = 0ul;
 
     if(!parseCommandline(argc, argv, path_svs_l, path_svs_r,
                          path_calibration, path_matcher,
                          path_bagfile,
                          debug,
                          points_only,
-                         images_only))
+                         images_only,
+                         split_size))
         return 1;
 
     /// check input paths
@@ -455,16 +461,16 @@ int main(int argc, char *argv[])
     disparity_image_msg.min_disparity = matcher->getMinDisparity();
     disparity_image_msg.max_disparity = matcher->getMinDisparity() + matcher->getNumDisparities() - 1;
     disparity_image_msg.delta_d = 1.0 / 16.0;
-    disparity_image_msg.f = calibration.intrinsics_right_.at<double>(0);
-    disparity_image_msg.T = calibration.baseline();
+    disparity_image_msg.f = static_cast<float>(calibration.intrinsics_right_.at<double>(0));
+    disparity_image_msg.T = static_cast<float>(calibration.baseline());
 
     auto copyImagetoMsg = [](const cv::Mat &matrix,
             const std::size_t byte_size,
             sensor_msgs::Image &image)
     {
-        image.width  = matrix.cols;
-        image.height = matrix.rows;
-        image.step   = matrix.cols * byte_size;
+        image.width  = static_cast<unsigned int>(matrix.cols);
+        image.height = static_cast<unsigned int>(matrix.rows);
+        image.step   = static_cast<unsigned int>(matrix.cols * byte_size);
         image.data.resize(image.step * image.height);
 
         const uint8_t *matrix_ptr = matrix.ptr<uint8_t>();
@@ -478,12 +484,28 @@ int main(int argc, char *argv[])
 
     /// bag outputfile
     rosbag::Bag bag;
-    bag.open(path_bagfile.string(), rosbag::bagmode::Write);
-    bag.setCompression(rosbag::CompressionType::LZ4);
+    const  bf::path extension_bag_file = path_bagfile.extension();
+    path_bagfile.replace_extension("");
+    std::size_t split = 0;
+    if(split_size > 0) {
+        bag.open(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
+        ++split;
+    } else {
+        bag.open(path_bagfile.string() + extension_bag_file.string(), rosbag::bagmode::Write);
+    }
+
+    bag.setCompression(rosbag::CompressionType::BZ2);
+
 
     std::cout << "Starting generation..." << "\n";
 
     for(std::size_t i = 0 ; i < size ; ++i) {
+        if(bag.getSize() > split_size) {
+            bag.close();
+            bag.open(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
+            ++split;
+        }
+
         const double stamp_left = images_left_stamps[i];
         const double stamp_right= images_right_stamps[i];
         cv::Mat left_rectified, right_rectified;
