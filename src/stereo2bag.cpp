@@ -18,6 +18,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/visualization/cloud_viewer.h>
 
+
 namespace po = boost::program_options;
 namespace bf = boost::filesystem;
 
@@ -501,9 +502,13 @@ int main(int argc, char *argv[])
     std::size_t split = 0;
 
     auto open_bag = [&bag] (const std::string &path){
+#if ROS_VERSION_MAJOR >= 1 && ROS_VERSION_MINOR >= 13
         if(bag.isOpen()) {
             bag.close();
         }
+#else
+    bag.close();
+#endif
         bag.open(path, rosbag::bagmode::Write);
     };
 
