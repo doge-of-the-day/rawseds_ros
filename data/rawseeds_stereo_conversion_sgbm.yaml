@@ -1,0 +1,14 @@
+%YAML:1.0
+---
+matcher_type: SGBM
+mode: 2
+preFilterCap: 63
+blockSize: 7
+P1: 392
+P2: 1568
+numDisparities: 64
+minDisparity: 0
+uniquenessRatio: 32
+speckleWindowSize: 152
+speckleRange: 200
+disp12MaxDiff: -1

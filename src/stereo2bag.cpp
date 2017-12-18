@@ -84,6 +84,11 @@ bool parseCommandline(int   argc,
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
 
+        if(argc == 1) {
+            std::cout << desc << "\n";
+            return false;
+        }
+
         if(vm.count("help") == 1ul) {
             std::cout << desc << "\n";
             return false;
@@ -120,7 +125,6 @@ bool parseCommandline(int   argc,
         path_matcher = bf::path(vm["matcher"].as<std::string>());
         path_bagfile = bf::path(vm["output"].as<std::string>());
         split_size = vm.count("split") == 1ul ? vm["split"].as<std::size_t>() : 0ul;
-
 
         return true;
     } catch(const po::error &e) {
@@ -350,8 +354,16 @@ int main(int argc, char *argv[])
         std::cerr << path_svs_l << " is not a folder!" << "\n";
         return 1;
     }
+    if(bf::is_empty(path_svs_l)) {
+        std::cerr << path_svs_l << " is empty!" << "\n";
+        return 1;
+    }
     if(!bf::is_directory(path_svs_r)) {
         std::cerr << path_svs_r << " is not a folder!" << "\n";
+        return 1;
+    }
+    if(bf::is_empty(path_svs_r)) {
+        std::cerr << path_svs_r << " is empty!" << "\n";
         return 1;
     }
     if(!bf::is_regular_file(path_calibration)) {
@@ -420,7 +432,7 @@ int main(int argc, char *argv[])
     const std::size_t size = images_left.size();
     const std::string left_frame_id = "svs_l";
     const std::string right_frame_id = "svs_r";
-    const double      max_depth = 25.0;
+    const float       max_depth = 25.0;
 
     std::shared_ptr<pcl::visualization::CloudViewer> viewer;
     if(debug) {
@@ -487,24 +499,33 @@ int main(int argc, char *argv[])
     const  bf::path extension_bag_file = path_bagfile.extension();
     path_bagfile.replace_extension("");
     std::size_t split = 0;
+
+    auto open_bag = [&bag] (const std::string &path){
+        if(bag.isOpen()) {
+            bag.close();
+        }
+        bag.open(path, rosbag::bagmode::Write);
+    };
+
     if(split_size > 0) {
-        bag.open(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
+        open_bag(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
         ++split;
     } else {
-        bag.open(path_bagfile.string() + extension_bag_file.string(), rosbag::bagmode::Write);
+        open_bag(path_bagfile.string() + extension_bag_file.string());
     }
 
-    bag.setCompression(rosbag::CompressionType::BZ2);
+//    bag.setCompression(rosbag::CompressionType::BZ2);
 
-
-    std::cout << "Starting generation..." << "\n";
+    std::cout << "String generation ... \n";
+    std::cout << "Writing '" << size << "' images to '" << bag.getFileName() << "'.\n";
 
     for(std::size_t i = 0 ; i < size ; ++i) {
-        if(bag.getSize() > split_size) {
-            bag.close();
-            bag.open(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
+        if(bag.getSize() > split_size && split_size > 0) {
+            open_bag(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
             ++split;
+            std::cout << "Writing to '" << bag.getFileName() << "'.\n";
         }
+
 
         const double stamp_left = images_left_stamps[i];
         const double stamp_right= images_right_stamps[i];
@@ -512,6 +533,7 @@ int main(int argc, char *argv[])
         cv::Mat left  = cv::imread(images_left[i], CV_LOAD_IMAGE_GRAYSCALE);
         cv::Mat right = cv::imread(images_right[i], CV_LOAD_IMAGE_GRAYSCALE);
         calibration.undistort(left, right, left_rectified, right_rectified);
+
 
         cv::Mat disparity_sc, disparity_f;
         matcher->compute(left_rectified, right_rectified, disparity_sc);
@@ -527,9 +549,9 @@ int main(int argc, char *argv[])
         using PointCloud = pcl::PointCloud<Point>;
 
         PointCloud::Ptr pointcloud(new PointCloud);
-        pointcloud->points.resize(xyz.rows * xyz.cols);
-        pointcloud->height = xyz.rows;
-        pointcloud->width  = xyz.cols;
+        pointcloud->points.resize(static_cast<std::size_t>(xyz.rows * xyz.cols));
+        pointcloud->height = static_cast<unsigned int>(xyz.rows);
+        pointcloud->width  = static_cast<unsigned int>(xyz.cols);
         for(int i = 0 ; i < xyz.rows; ++i) {
             for(int j = 0 ; j < xyz.cols ; ++j) {
                 const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);
@@ -553,12 +575,13 @@ int main(int argc, char *argv[])
             cv::imshow("left", left_rectified);
             cv::imshow("right", right_rectified);
             cv::imshow("disparity", display_disparity);
-            cv::waitKey(19);
+            cv::waitKey(5);
 
             if(!viewer->wasStopped()) {
                 viewer->showCloud(pointcloud);
             }
         }
+
 
         /// BAG FILE
         /// Disparity

@@ -8,21 +8,15 @@ ADD_DEFINITIONS(
 find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(catkin REQUIRED
     camera_info_manager
-    cmake_modules
-    cv_bridge
-    geometry_msgs
-    image_transport
+    sensor_msgs
+    stereo_msgs
     rosbag
     roscpp
     rospy
-    sensor_msgs
-    tf_conversions
-    stereo_msgs
-
+    pcl_conversions
     message_generation
 )
 
-find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED)
 
@@ -44,20 +38,16 @@ catkin_package(
 include_directories(
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
-set(COMMON_LIBRARIES
-  ${Boost_LIBRARIES}
-  ${catkin_LIBRARIES}
-  ${OpenCV_LIBS}
-  ${PCL_LIBRARIES}
-)
-
-add_executable(stereo2bag
+add_executable(${PROJECT_NAME}_stereo2bag
     src/stereo2bag.cpp
 )
-target_link_libraries(stereo2bag
-    ${COMMON_LIBRARIES}
+target_link_libraries(${PROJECT_NAME}_stereo2bag
+    ${Boost_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
 )

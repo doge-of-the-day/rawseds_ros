@@ -1,0 +1,14 @@
+%YAML:1.0
+---
+matcher_type: BM
+minDisparity: 1
+numDisparities: 48
+blockSize: 51
+preFilterType: 1
+preFilterSize: 15
+preFilterCap: 20
+textureThreshold: 0
+uniquenessRatio: 3
+speckleWindowSize: 716
+speckleRange: 491
+disp12MaxDiff: 1
