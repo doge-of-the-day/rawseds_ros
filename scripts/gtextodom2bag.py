@@ -24,9 +24,6 @@ def main():
     print('frame_id:    ' + args.frame_id)
     print('topic:       ' + args.topic)
 
-    frame_id = '/odom_gt'
-    topic = '/odom_gt'
-
     n_messages = 0
 
     with rosbag.Bag(args.output, 'w') as out_bag:
