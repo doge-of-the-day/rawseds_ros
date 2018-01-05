@@ -28,8 +28,6 @@ def main():
             count = len(in_file.readlines())
             in_file.seek(0)
             for i, line in enumerate(in_file):
-                print(line)
-
                 # read line:
                 row = line.split(',')
 

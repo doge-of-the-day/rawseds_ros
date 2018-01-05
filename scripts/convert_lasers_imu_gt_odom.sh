@@ -1,6 +1,6 @@
 #!/bin/bash
 bag=${PWD##*/}-groundtruth.bag
-if [ ! -f odom-gt.bag ] || [ "$1" = "--clean" ]; then
+if [ ! -f odom_gt.bag ] || [ "$1" = "--clean" ]; then
     echo "Converting ground truth odometry!"
     rosrun rawseeds_ros gtodom2bag.py --frame_id odom --topic /odom *GROUNDTRUTH.csv odom_gt.bag
 fi
@@ -24,6 +24,6 @@ if [ ! -f hokuyo_front.bag ] || [ "$1" = "--clean" ] ; then
     echo "Converting Hokuyo laserscanner rear!"
     rosrun rawseeds_ros hokuyo2bag.py --frame_id hokuyo_front --topic /hokuyo/front *HOKUYO_FRONT.csv hokuyo_front.bag
 fi
-rosrun rawseeds_ros merge_bags.py -i odom-gt.bag imu.bag sick_rear.bag sick_front.bag hokuyo_front.bag hokuyo_rear.bag -o $bag
+rosrun rawseeds_ros merge_bags.py -i odom_gt.bag imu.bag sick_rear.bag sick_front.bag hokuyo_front.bag hokuyo_rear.bag -o $bag
 
 
