@@ -1,4 +1,6 @@
+<?xml version="1.0" ?>
 <launch>
+
 <!-- SICK LASER SCANNER TRANSFORMATIONS -->
 <node pkg="tf" type="static_transform_publisher" name="sick_front_bc" args="0.048 0 0.45 0 0 0 1 base_link sick_front 10" />
 <node pkg="tf" type="static_transform_publisher" name="sick_rear_bc" args="-0.495 0.001 0.454 0 0 1.0	 0 base_link sick_rear 100" />

@@ -21,6 +21,6 @@
 <node pkg="tf" type="static_transform_publisher" name="gps_antenna_bc" args="-0.021 0.164 1.375 0 0 0 1 base_link gps_antenna 10" />
 
 <!-- IMU TRANSFOMATION -->
-<node pkg="tf" type="static_transform_publisher" name="imu_bc" args="-0.224 -0.007 0.537 0 0 0 1 base_link imu 10" />
+<node pkg="tf" type="static_transform_publisher" name="imu_bc" args="-0.192 -0.007 0.537 0 0 0 1 base_link imu 10" />
 
 </launch>
