@@ -89,10 +89,6 @@ bool parseCommandline(int   argc,
                 std::cerr << "Missing path to the calibration file of the stereo system." << "\n";
                 return false;
             }
-            if(vm.count("matcher") == 0ul) {
-                std::cerr << "Missing path to the matcher which should be employed." << "\n";
-                return false;
-            }
             if(vm.count("output") == 0ul) {
                 std::cerr << "Missing path for the output bagfile." << "\n";
                 return false;
