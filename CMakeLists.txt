@@ -42,8 +42,19 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+add_executable(${PROJECT_NAME}_stereo_camera_node
+    src/nodes/stereo_camera_node.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}_stereo_camera_node
+    ${Boost_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+)
+
 add_executable(${PROJECT_NAME}_stereo2bag
-    src/stereo2bag.cpp
+    src/tools/stereo2bag.cpp
 )
 target_link_libraries(${PROJECT_NAME}_stereo2bag
     ${Boost_LIBRARIES}
@@ -53,7 +64,7 @@ target_link_libraries(${PROJECT_NAME}_stereo2bag
 )
 
 add_executable(${PROJECT_NAME}_stereo2procbag
-    src/stereo2procbag.cpp
+    src/tools/stereo2procbag.cpp
 )
 target_link_libraries(${PROJECT_NAME}_stereo2procbag
     ${Boost_LIBRARIES}
