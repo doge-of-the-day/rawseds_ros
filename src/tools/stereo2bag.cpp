@@ -172,7 +172,7 @@ struct Calibration {
             right_info.R[i] = R_right_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 12 ; ++i) {
-            right_info.P[i] = R_right_.at<double>(static_cast<int>(i));
+            right_info.P[i] = P_right_.at<double>(static_cast<int>(i));
         }
     }
 

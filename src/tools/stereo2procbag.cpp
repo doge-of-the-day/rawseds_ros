@@ -147,7 +147,7 @@ struct Calibration {
             right_info.R[i] = R_right_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 12 ; ++i) {
-            right_info.P[i] = R_right_.at<double>(static_cast<int>(i));
+            right_info.P[i] = P_right_.at<double>(static_cast<int>(i));
         }
     }
 
@@ -314,10 +314,10 @@ int main(int argc, char *argv[])
     sensor_msgs::Image left_image_msg;
     sensor_msgs::Image right_image_msg;
     left_image_msg.header                  = left_info_msg.header;
-    left_image_msg.encoding                = sensor_msgs::image_encodings::RGB8;
+    left_image_msg.encoding                = sensor_msgs::image_encodings::MONO8;
     left_image_msg.is_bigendian            = 0;
     right_image_msg.header                 = right_image_msg.header;
-    right_image_msg.encoding               = sensor_msgs::image_encodings::RGB8;
+    right_image_msg.encoding               = sensor_msgs::image_encodings::MONO8;
     right_image_msg.is_bigendian           = 0;
 
     auto copyImagetoMsg = [](const cv::Mat &matrix,
@@ -377,8 +377,8 @@ int main(int argc, char *argv[])
 
         const double stamp_left = images_left_stamps[i];
         const double stamp_right= images_right_stamps[i];
-        cv::Mat left  = cv::imread(images_left[i], CV_LOAD_IMAGE_COLOR);
-        cv::Mat right = cv::imread(images_right[i], CV_LOAD_IMAGE_COLOR);
+        cv::Mat left  = cv::imread(images_left[i], CV_LOAD_IMAGE_GRAYSCALE);
+        cv::Mat right = cv::imread(images_right[i], CV_LOAD_IMAGE_GRAYSCALE);
 
         if(debug) {
             cv::imshow("left", left);
@@ -389,8 +389,8 @@ int main(int argc, char *argv[])
 
         /// BAG FILE
         /// left and right images
-        copyImagetoMsg(left, sizeof(uint8_t) * 3, left_image_msg);
-        copyImagetoMsg(right, sizeof(uint8_t)  * 3, right_image_msg);
+        copyImagetoMsg(left, sizeof(uint8_t), left_image_msg);
+        copyImagetoMsg(right, sizeof(uint8_t), right_image_msg);
 
         double stamp_match = std::max(stamp_left, stamp_right);
         /// time stamp images

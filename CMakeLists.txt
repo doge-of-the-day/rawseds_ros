@@ -42,11 +42,13 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME}_stereo_camera_node
-    src/nodes/stereo_camera_node.cpp
+add_executable(${PROJECT_NAME}_stereo_matcher_node
+    src/nodes/undistortion.hpp
+    src/nodes/calibration.hpp
+    src/nodes/stereo_matcher_node.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_stereo_camera_node
+target_link_libraries(${PROJECT_NAME}_stereo_matcher_node
     ${Boost_LIBRARIES}
     ${OpenCV_LIBRARIES}
     ${catkin_LIBRARIES}
