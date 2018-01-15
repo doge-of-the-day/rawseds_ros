@@ -51,3 +51,13 @@ target_link_libraries(${PROJECT_NAME}_stereo2bag
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
 )
+
+add_executable(${PROJECT_NAME}_stereo2procbag
+    src/stereo2procbag.cpp
+)
+target_link_libraries(${PROJECT_NAME}_stereo2procbag
+    ${Boost_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
+
