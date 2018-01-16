@@ -43,8 +43,9 @@ private:
     Undistortion::Ptr           undistortion_left_;
     Undistortion::Ptr           undistortion_right_;
 
-    bool setup();
+    bool                        debug_;
 
+    bool setup();
 
     void left(const sensor_msgs::ImageConstPtr &msg);
     void left(const sensor_msgs::CameraInfoConstPtr &msg);

@@ -4,6 +4,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <opencv2/cudastereo.hpp>
 
 namespace rawseeds_ros {
 StereoMatcherNode::StereoMatcherNode() :
@@ -23,7 +24,7 @@ void StereoMatcherNode::run()
 bool StereoMatcherNode::setup()
 {
     ROS_INFO_STREAM("Initializing the matcher.");
-    const std::string matcher_type = nh_.param<std::string>("matcher_type", "BM");
+    const std::string matcher_type = nh_.param<std::string>("matcher_type", "SGBM");
     if(matcher_type == "BM") {
         int min_disparity           = nh_.param<int>("min_disparity"        , 1);
         int num_disparitites        = nh_.param<int>("num_disparitites"     , 48);
@@ -74,6 +75,10 @@ bool StereoMatcherNode::setup()
                                            speckle_range,
                                            mode);
         matcher_ = sgbm;
+    } else if (matcher_type == "CUDA_BM") {
+        int num_disparitites        = nh_.param<int>("num_disparitites"     , 64);
+        int block_size              = nh_.param<int>("block_size"           , 19);
+        matcher_ = cv::cuda::createStereoBM(num_disparitites, block_size);
     } else {
         std::cerr << "Unknown matcher type." << "\n";
         return false;
@@ -82,10 +87,12 @@ bool StereoMatcherNode::setup()
     std::vector<double> T;
     std::vector<double> R;
     std::vector<double> S;
+    std::vector<double> Q;
 
     nh_.getParam("T", T);
     nh_.getParam("R", R);
     nh_.getParam("S", S);
+    nh_.getParam("Q", Q);
 
     if(T.size() != 3) {
         ROS_ERROR("Translation vector for stereo camera 'T' is required with the right size.");
@@ -99,6 +106,14 @@ bool StereoMatcherNode::setup()
         ROS_ERROR("Expected image size for the cameras 'S' required with the right size.");
         return false;
     }
+    if(Q.size() == 16) {
+        ROS_INFO_STREAM("Loading Q matrix from launch file.");
+        Q_ = cv::Mat(4,4,CV_64FC1,cv::Scalar());
+        for(int i = 0 ; i < 16 ; ++i) {
+            Q_.at<double>(i) = Q.at(i);
+        }
+    }
+
 
     T_ = cv::Mat(3,1,CV_64FC1,cv::Scalar());
     for(int i = 0 ; i < 3 ; ++i) {
@@ -126,6 +141,12 @@ bool StereoMatcherNode::setup()
 
 
     time_delta_ = nh_.param<double>("time_delta", 1e-5);
+    debug_      = nh_.param<bool>("debug", false);
+
+    if(debug_) {
+        ROS_WARN_STREAM("Debug mode is on!");
+    }
+
     ROS_INFO_STREAM("Setup finished quite nicely!");
 
     return true;
@@ -160,11 +181,22 @@ void StereoMatcherNode::left(const sensor_msgs::CameraInfoConstPtr &msg)
     if(!calibration_left_) {
         if(msg->height != S_.height ||
                 msg->width != S_.width) {
-            ROS_ERROR("Camera info contains size which is not matching!");
+            ROS_ERROR_STREAM("Left camera info contains size which is not matching: ["
+                             << S_.width << "," << S_.height
+                             << "] vs. ["
+                             << msg->width << "," << msg->height << "]");
             ros::shutdown();
         }
 
         calibration_left_.reset(new Calibration(msg));
+        if(debug_) {
+            ROS_INFO_STREAM("Left calibration: \n" <<
+                            "K: \n" << calibration_left_->K() << "\n" <<
+                            "D: \n" << calibration_left_->D() << "\n" <<
+                            "P: \n" << calibration_left_->P() << "\n" <<
+                            "R: \n" << calibration_left_->R() << "\n");
+        }
+
         undistortion_left_.reset(new Undistortion(calibration_left_->size(),
                                                   calibration_left_->K(),
                                                   calibration_left_->D(),
@@ -206,11 +238,22 @@ void StereoMatcherNode::right(const sensor_msgs::CameraInfoConstPtr &msg)
     if(!calibration_right_) {
         if(msg->height != S_.height ||
                 msg->width != S_.width) {
-            ROS_ERROR("Camera info contains size which is not matching!");
+            ROS_ERROR_STREAM("Right camera info contains size which is not matching: ["
+                             << S_.width << "," << S_.height
+                             << "] vs. ["
+                             << msg->width << "," << msg->height << "]");
             ros::shutdown();
         }
 
         calibration_right_.reset(new Calibration(msg));
+        if(debug_) {
+            ROS_INFO_STREAM("Right calibration: \n" <<
+                            "K: \n" << calibration_right_->K() << "\n" <<
+                            "D: \n" << calibration_right_->D() << "\n" <<
+                            "P: \n" << calibration_right_->P() << "\n" <<
+                            "R: \n" << calibration_right_->R() << "\n");
+        }
+
         undistortion_right_.reset(new Undistortion(calibration_right_->size(),
                                                    calibration_right_->K(),
                                                    calibration_right_->D(),
@@ -225,6 +268,9 @@ void StereoMatcherNode::right(const sensor_msgs::CameraInfoConstPtr &msg)
 
 void StereoMatcherNode::stereoRectify()
 {
+    if(!Q_.empty())
+        return;
+
     cv::Mat R1, R2, P1, P2;
     cv::stereoRectify(calibration_left_->K(), calibration_left_->D(),
                       calibration_right_->K(), calibration_right_->D(),
@@ -246,19 +292,40 @@ void StereoMatcherNode::match()
     cv::Mat right(S_.height, S_.width, CV_8UC1, cv::Scalar());
     for(int i = 0 ; i < S_.height ; ++i) {
         for(int j = 0 ; j < S_.width ; ++j) {
-            left.at<uchar>(i,j) = left_img_->data[i * S_.width + j];
-            right.at<uchar>(i,j) = left_img_->data[i * S_.width + j];
+            left.at<uchar>(i,j)  = left_img_->data[i * S_.width + j];
+            right.at<uchar>(i,j) = right_img_->data[i * S_.width + j];
         }
     }
 
     cv::Mat left_rectified, right_rectified;
     undistortion_left_->apply(left, left_rectified);
-    undistortion_left_->apply(right, right_rectified);
+    undistortion_right_->apply(right, right_rectified);
     cv::Mat disparity;
     matcher_->compute(left_rectified, right_rectified, disparity);
 
+    cv::Mat disparity_f;
+    // We convert from fixed-point to float disparity and also adjust for any x-offset between
+    // the principal points: d = d_fp*inv_dpp - (cx_l - cx_r)
+    // 1./16?
+    //    cv::Mat_<cv::Vec3f> XYZ(disparity32F.rows,disparity32F.cols);   // Output point cloud
+    //    cv::Mat_<float> vec_tmp(4,1);
+    //    for(int y=0; y<disparity32F.rows; ++y) {
+    //        for(int x=0; x<disparity32F.cols; ++x) {
+    //            vec_tmp(0)=x; vec_tmp(1)=y; vec_tmp(2)=disparity32F.at<float>(y,x); vec_tmp(3)=1;
+    //            vec_tmp = Q*vec_tmp;
+    //            vec_tmp /= vec_tmp(3);
+    //            cv::Vec3f &point = XYZ.at<cv::Vec3f>(y,x);
+    //            point[0] = vec_tmp(0);
+    //            point[1] = vec_tmp(1);
+    //            point[2] = vec_tmp(2);
+    //        }
+    //    }
+    //        disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0, -(calibration_left_->K().at<double>(0,2) -
+    //                                                             calibration_right_->K().at<double>(0,2)));
+    disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0);
+
     cv::Mat xyz;
-    cv::reprojectImageTo3D(disparity, xyz, Q_, true);
+    cv::reprojectImageTo3D(disparity_f, xyz, Q_, true);
 
     using Point      = pcl::PointXYZRGB;
     using PointCloud = pcl::PointCloud<Point>;
@@ -281,6 +348,15 @@ void StereoMatcherNode::match()
             p.b = g;
         }
     }
+
+    if(debug_) {
+        cv::normalize(disparity_f, disparity_f, 0.0, 1.0, cv::NORM_MINMAX);
+        cv::imshow("disparity", disparity_f);
+        cv::imshow("left_rectified", left_rectified);
+        cv::imshow("right_rectified", right_rectified);
+        cv::waitKey(5);
+    }
+
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(*pointcloud, pointcloud_msg);
     pointcloud_msg.header = left_img_->header;

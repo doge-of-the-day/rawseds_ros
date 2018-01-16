@@ -12,12 +12,13 @@ public:
     using Ptr = std::shared_ptr<Calibration>;
 
     Calibration(const sensor_msgs::CameraInfoConstPtr &info) :
-        size_(info->width, info->height),
-        K_(cv::Mat(3,3, CV_64FC1, cv::Scalar())),
-        D_(cv::Mat(5,1, CV_64FC1, cv::Scalar())),
-        R_(cv::Mat(3,3, CV_64FC1, cv::Scalar())),
-        P_(cv::Mat(3,4, CV_64FC1, cv::Scalar()))
+        size_(info->width, info->height)
     {
+        K_ = cv::Mat(3,3, CV_64FC1, cv::Scalar());
+        D_ = cv::Mat(5,1, CV_64FC1, cv::Scalar());
+        R_ = cv::Mat(3,3, CV_64FC1, cv::Scalar());
+        P_ = cv::Mat(3,4, CV_64FC1, cv::Scalar());
+
         for(int i = 0 ; i < 9; ++i) {
             K_.at<double>(i) = info->K.at(i);
             R_.at<double>(i) = info->R.at(i);

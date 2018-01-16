@@ -3,6 +3,12 @@
 	<include file="$(find rawseeds_ros)/launch/transforms.launch" />
 
 	<node name="rawseeds_ros_stereo_matcher" pkg="rawseeds_ros" type="rawseeds_ros_stereo_matcher_node" required="true" output="screen">
+            <rosparam param="Q">
+            [ 1., 0., 0., -3.1766655731201172e+02, 
+              0., 1., 0., -2.2962502288818359e+02, 
+              0., 0., 0., 5.9323512712527406e+02, 
+              0., 0., 5.5137921594385420e+00, 0. ]
+            </rosparam>
             <rosparam param="R">
             [ 9.9997526622800492e-01, -5.7100592285120686e-03, -4.1063555420275703e-03, 
               5.7070653303978921e-03,  9.9998344044176035e-01, -7.4043742129889100e-04,
@@ -14,5 +20,6 @@
              <rosparam param="S">
                 [640, 480]
             </rosparam>
+            <param name="debug" value="true" />
 	</node>
 </launch>

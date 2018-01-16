@@ -128,7 +128,7 @@ struct Calibration {
         left_info.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
         distortion_left_.copyTo(left_info.D);
         for(std::size_t i = 0 ; i < 9 ; ++i) {
-            left_info.K[i] = distortion_left_.at<double>(static_cast<int>(i));
+            left_info.K[i] = intrinsics_left_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 9 ; ++i) {
             left_info.R[i] = R_left_.at<double>(static_cast<int>(i));
@@ -141,7 +141,7 @@ struct Calibration {
         right_info.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
         distortion_left_.copyTo(right_info.D);
         for(std::size_t i = 0 ; i < 9 ; ++i) {
-            right_info.K[i] = distortion_right_.at<double>(static_cast<int>(i));
+            right_info.K[i] = intrinsics_right_.at<double>(static_cast<int>(i));
         }
         for(std::size_t i = 0 ; i < 9 ; ++i) {
             right_info.R[i] = R_right_.at<double>(static_cast<int>(i));
@@ -385,6 +385,11 @@ int main(int argc, char *argv[])
             cv::imshow("right", right);
             cv::waitKey(5);
         }
+
+        left_info_msg.width = left_info_msg.width == 0 ? left.cols : left_info_msg.width;
+        left_info_msg.height = left_info_msg.height == 0 ? left.rows : left_info_msg.height;
+        right_info_msg.width = right_info_msg.width == 0 ? right.cols : right_info_msg.width;
+        right_info_msg.height = right_info_msg.height == 0 ? right.rows : right_info_msg.height;
 
 
         /// BAG FILE

@@ -544,8 +544,8 @@ int main(int argc, char *argv[])
         matcher->compute(left_rectified, right_rectified, disparity_sc);
         // We convert from fixed-point to float disparity and also adjust for any x-offset between
         // the principal points: d = d_fp*inv_dpp - (cx_l - cx_r)
-        disparity_sc.convertTo(disparity_f, CV_32FC1, 1.0, -(calibration.intrinsics_left_.at<double>(0,2) -
-                                                             calibration.intrinsics_right_.at<double>(0,2)));
+        disparity_sc.convertTo(disparity_f, CV_32FC1, 1.0/16.0, -(calibration.intrinsics_left_.at<double>(0,2) -
+                                                                  calibration.intrinsics_right_.at<double>(0,2)));
 
         cv::Mat xyz;
         cv::reprojectImageTo3D(disparity_f, xyz, calibration.Q_, true);
