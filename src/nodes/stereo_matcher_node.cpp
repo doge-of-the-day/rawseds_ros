@@ -6,10 +6,16 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <opencv2/cudastereo.hpp>
 
+#include <omp.h>
+
 namespace rawseeds_ros {
 StereoMatcherNode::StereoMatcherNode() :
     nh_("~")
 {
+#ifdef USE_OMP
+    omp_set_dynamic(0);
+    omp_set_num_threads(2);
+#endif
 }
 
 void StereoMatcherNode::run()
@@ -75,56 +81,102 @@ bool StereoMatcherNode::setup()
                                            speckle_range,
                                            mode);
         matcher_ = sgbm;
-    } else if (matcher_type == "CUDA_BM") {
-        int num_disparitites        = nh_.param<int>("num_disparitites"     , 64);
-        int block_size              = nh_.param<int>("block_size"           , 19);
-        matcher_ = cv::cuda::createStereoBM(num_disparitites, block_size);
     } else {
         std::cerr << "Unknown matcher type." << "\n";
         return false;
     }
 
-    std::vector<double> T;
-    std::vector<double> R;
-    std::vector<double> S;
-    std::vector<double> Q;
-
-    nh_.getParam("T", T);
-    nh_.getParam("R", R);
-    nh_.getParam("S", S);
-    nh_.getParam("Q", Q);
-
-    if(T.size() != 3) {
+    /// READ ESSENTIAL PARAMETERS
+    std::vector<double> buffer;
+    nh_.getParam("T", buffer);
+    if(buffer.size() != 3) {
         ROS_ERROR("Translation vector for stereo camera 'T' is required with the right size.");
         return false;
     }
-    if(R.size() != 9) {
+    T_ = cv::Mat(3,1,CV_64FC1,cv::Scalar());
+    for(int i = 0 ; i < 3 ; ++i) {
+        T_.at<double>(i) = buffer.at(i);
+    }
+    buffer.clear();
+    nh_.getParam("R", buffer);
+    if(buffer.size() != 9) {
         ROS_ERROR("Rotation matrix for stereo camera 'R' is required with the right size.");
         return false;
     }
-    if(S.size() != 2) {
+    R_ = cv::Mat(3,3, CV_64FC1,cv::Scalar());
+    for(int i = 0 ; i < 9 ; ++i) {
+        R_.at<double>(i) = buffer.at(i);
+    }
+    buffer.clear();
+    nh_.getParam("S", buffer);
+    if(buffer.size() != 2) {
         ROS_ERROR("Expected image size for the cameras 'S' required with the right size.");
         return false;
     }
-    if(Q.size() == 16) {
+    S_.width    = buffer.at(0);
+    S_.height   = buffer.at(1);
+
+    /// READ OPTIONALS
+    buffer.clear();
+    nh_.getParam("Q", buffer);
+    if(buffer.size() == 16) {
         ROS_INFO_STREAM("Loading Q matrix from launch file.");
         Q_ = cv::Mat(4,4,CV_64FC1,cv::Scalar());
         for(int i = 0 ; i < 16 ; ++i) {
-            Q_.at<double>(i) = Q.at(i);
+            Q_.at<double>(i) = buffer.at(i);
         }
     }
 
+    auto try_read_calibration = [&buffer, this] (const std::string &suffix,
+            Calibration::Ptr &calib,
+            Undistortion::Ptr &undist)
+    {
+        cv::Mat K = cv::Mat(3,3, CV_64FC1, cv::Scalar());
+        cv::Mat D = cv::Mat(5,1, CV_64FC1, cv::Scalar());
+        cv::Mat R = cv::Mat(3,3, CV_64FC1, cv::Scalar());
+        cv::Mat P = cv::Mat(3,4, CV_64FC1, cv::Scalar());
 
-    T_ = cv::Mat(3,1,CV_64FC1,cv::Scalar());
-    for(int i = 0 ; i < 3 ; ++i) {
-        T_.at<double>(i) = T.at(i);
-    }
-    R_ = cv::Mat(3,3, CV_64FC1,cv::Scalar());
-    for(int i = 0 ; i < 9 ; ++i) {
-        R_.at<double>(i) = R.at(i);
-    }
-    S_.width    = S.at(0);
-    S_.height   = S.at(1);
+        buffer.clear();
+        nh_.getParam("K"+suffix, buffer);
+        if(buffer.size() != 9)
+            return;
+        for(int i = 0 ; i < 9 ; ++i) {
+            K.at<double>(i) = buffer.at(i);
+        }
+
+        buffer.clear();
+        nh_.getParam("D"+suffix, buffer);
+        if(buffer.size() != 5)
+            return;
+
+        for(int i = 0 ; i < 5 ; ++i) {
+            D.at<double>(i) = buffer.at(i);
+        }
+
+        buffer.clear();
+        nh_.getParam("R"+suffix, buffer);
+        if(buffer.size() != 9)
+            return;
+        for(int i = 0 ; i < 9 ; ++i) {
+            R.at<double>(i) = buffer.at(i);
+        }
+
+        buffer.clear();
+        nh_.getParam("P"+suffix, buffer);
+        if(buffer.size() != 12)
+            return;
+        for(int i = 0 ; i < 12 ; ++i) {
+            P.at<double>(i) = buffer.at(i);
+        }
+
+        calib.reset(new Calibration(S_, K, D, R, P));
+        undist.reset(new Undistortion(S_, K, D, R, P));
+    };
+
+    try_read_calibration("_left", calibration_left_, undistortion_left_);
+    try_read_calibration("_right", calibration_right_, undistortion_right_);
+
+
 
     ROS_INFO_STREAM("Setting up the subscribers");
     const int queue_size                = nh_.param<int>("queue_size", 1);
@@ -140,7 +192,7 @@ bool StereoMatcherNode::setup()
     pub_points_     = nh_.advertise<sensor_msgs::PointCloud2>(topic_points, 1);
 
 
-    time_delta_ = nh_.param<double>("time_delta", 1e-5);
+    time_delta_ = nh_.param<double>("time_delta", 1e-8);
     debug_      = nh_.param<bool>("debug", false);
 
     if(debug_) {
@@ -304,27 +356,9 @@ void StereoMatcherNode::match()
     matcher_->compute(left_rectified, right_rectified, disparity);
 
     cv::Mat disparity_f;
-    // We convert from fixed-point to float disparity and also adjust for any x-offset between
-    // the principal points: d = d_fp*inv_dpp - (cx_l - cx_r)
-    // 1./16?
-    //    cv::Mat_<cv::Vec3f> XYZ(disparity32F.rows,disparity32F.cols);   // Output point cloud
-    //    cv::Mat_<float> vec_tmp(4,1);
-    //    for(int y=0; y<disparity32F.rows; ++y) {
-    //        for(int x=0; x<disparity32F.cols; ++x) {
-    //            vec_tmp(0)=x; vec_tmp(1)=y; vec_tmp(2)=disparity32F.at<float>(y,x); vec_tmp(3)=1;
-    //            vec_tmp = Q*vec_tmp;
-    //            vec_tmp /= vec_tmp(3);
-    //            cv::Vec3f &point = XYZ.at<cv::Vec3f>(y,x);
-    //            point[0] = vec_tmp(0);
-    //            point[1] = vec_tmp(1);
-    //            point[2] = vec_tmp(2);
-    //        }
-    //    }
-    //        disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0, -(calibration_left_->K().at<double>(0,2) -
-    //                                                             calibration_right_->K().at<double>(0,2)));
     disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0);
 
-    cv::Mat xyz;
+    cv::Mat xyz(disparity_f.rows, disparity_f.cols, CV_32FC3, cv::Scalar());
     cv::reprojectImageTo3D(disparity_f, xyz, Q_, true);
 
     using Point      = pcl::PointXYZRGB;
@@ -335,6 +369,7 @@ void StereoMatcherNode::match()
     pointcloud->height = static_cast<unsigned int>(xyz.rows);
     pointcloud->width  = static_cast<unsigned int>(xyz.cols);
 
+#pragma omp parallel for
     for(int i = 0 ; i < xyz.rows; ++i) {
         for(int j = 0 ; j < xyz.cols ; ++j) {
             const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);

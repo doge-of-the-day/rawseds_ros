@@ -31,6 +31,19 @@ public:
         }
     }
 
+    Calibration(const cv::Size &S,
+                const cv::Mat  &K,
+                const cv::Mat  &D,
+                const cv::Mat  &R,
+                const cv::Mat  &P) :
+        size_(S),
+        K_(K.clone()),
+        D_(D.clone()),
+        R_(R.clone()),
+        P_(P.clone())
+    {
+    }
+
     cv::Size const & size() const
     {
         return size_;
