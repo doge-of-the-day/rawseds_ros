@@ -360,6 +360,11 @@ void StereoMatcherNode::match()
         return;
     }
 
+    if(!left_img_)
+        return;
+    if(!right_img_)
+        return;
+
     cv::Mat left(S_.height, S_.width, CV_8UC1, cv::Scalar());
     cv::Mat right(S_.height, S_.width, CV_8UC1, cv::Scalar());
     for(int i = 0 ; i < S_.height ; ++i) {
