@@ -255,7 +255,7 @@ void StereoMatcherCudaNode::right(const sensor_msgs::ImageConstPtr &msg)
     right_img_   = msg;
 
     if(right_img_) {
-        if(std::abs((right_img_->header.stamp - msg->header.stamp).toSec()) < time_delta_) {
+        if(std::abs((left_img_->header.stamp - msg->header.stamp).toSec()) < time_delta_) {
             match();
         }
     }
