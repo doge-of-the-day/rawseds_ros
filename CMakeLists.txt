@@ -65,6 +65,22 @@ target_link_libraries(${PROJECT_NAME}_stereo_matcher_node
     ${PCL_LIBRARIES}
 )
 
+if(${OpenCV_CUDA_VERSION})
+    message("[${PROJECT_NAME}]: Compilining with OpenCV cuda!")
+    add_executable(${PROJECT_NAME}_stereo_matcher_cuda_node
+        src/nodes/undistortion.hpp
+        src/nodes/calibration.hpp
+        src/nodes/cuda_matchers.hpp
+        src/nodes/stereo_matcher_cuda_node.cpp
+    )
+    target_link_libraries(${PROJECT_NAME}_stereo_matcher_cuda_node
+        ${Boost_LIBRARIES}
+        ${OpenCV_LIBRARIES}
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+    )
+endif()
+
 add_executable(${PROJECT_NAME}_stereo2bag
     src/tools/stereo2bag.cpp
 )
