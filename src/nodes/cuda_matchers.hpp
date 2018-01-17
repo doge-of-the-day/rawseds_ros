@@ -23,13 +23,33 @@ public:
         assert(left.rows == right.rows);
         assert(left.cols == right.cols);
 
-        disparity_ = cv::cuda::GpuMat(left.rows, right.rows, CV_8UC1);
+        disparity_ = cv::cuda::GpuMat(left.rows, right.rows, CV_16SC1);
 
         left_.upload(left);
         right_.upload(right);
         doCompute();
         disparity_.download(disparity);
     }
+
+
+    void compute(const cv::Mat &left,
+                 const cv::Mat &right,
+                 cv::cuda::GpuMat &disparity)
+    {
+        assert(left.type() == CV_8UC1);
+        assert(right.type() == CV_8UC1);
+        assert(left.rows == right.rows);
+        assert(left.cols == right.cols);
+
+        disparity_ = cv::cuda::GpuMat(left.rows, right.rows, CV_16SC1);
+
+        left_.upload(left);
+        right_.upload(right);
+        doCompute();
+        disparity = disparity_.clone();
+    }
+
+
 
 protected:
     Matcher() = default;

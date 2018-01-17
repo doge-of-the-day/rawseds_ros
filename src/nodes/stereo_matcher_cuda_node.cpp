@@ -94,9 +94,9 @@ bool StereoMatcherCudaNode::setup()
     nh_.getParam("Q", buffer);
     if(buffer.size() == 16) {
         ROS_INFO_STREAM("Loading Q matrix from launch file.");
-        Q_ = cv::Mat(4,4,CV_64FC1,cv::Scalar());
+        Q_ = cv::Mat(4,4,CV_32FC1,cv::Scalar());
         for(int i = 0 ; i < 16 ; ++i) {
-            Q_.at<double>(i) = buffer.at(i);
+            Q_.at<float>(i) = buffer.at(i);
         }
     }
 
@@ -333,14 +333,19 @@ void StereoMatcherCudaNode::match()
     cv::Mat left_rectified, right_rectified;
     undistortion_left_->apply(left, left_rectified);
     undistortion_right_->apply(right, right_rectified);
-    cv::Mat disparity;
+    cv::cuda::GpuMat disparity;
     matcher_->compute(left_rectified, right_rectified, disparity);
 
-    cv::Mat disparity_f;
-    disparity.convertTo(disparity_f, CV_32FC1);
+    cv::cuda::GpuMat xyz_gpu(disparity.rows, disparity.cols, CV_32FC3);
+    cv::cuda::GpuMat Q_gpu;
+    Q_gpu.upload(Q_);
 
-    cv::Mat xyz(disparity_f.rows, disparity_f.cols, CV_32FC3, cv::Scalar());
-    cv::reprojectImageTo3D(disparity_f, xyz, Q_, true);
+
+    cv::cuda::reprojectImageTo3D(disparity, xyz_gpu, Q_, 3);
+
+    cv::Mat xyz;
+    xyz_gpu.download(xyz);
+
 
     using Point      = pcl::PointXYZRGB;
     using PointCloud = pcl::PointCloud<Point>;
@@ -366,8 +371,11 @@ void StereoMatcherCudaNode::match()
     }
 
     if(debug_) {
-        cv::normalize(disparity_f, disparity_f, 0.0, 1.0, cv::NORM_MINMAX);
-        cv::imshow("disparity", disparity_f);
+        cv::Mat disparty_display;
+        disparity.download(disparty_display);
+        cv::normalize(disparty_display, disparty_display, 0, 255, CV_MINMAX);
+
+        cv::imshow("disparity", disparty_display);
         cv::imshow("left_rectified", left_rectified);
         cv::imshow("right_rectified", right_rectified);
         cv::waitKey(5);
