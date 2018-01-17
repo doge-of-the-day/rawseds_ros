@@ -56,6 +56,10 @@ add_executable(${PROJECT_NAME}_stereo_matcher_node
     src/nodes/undistortion.hpp
     src/nodes/calibration.hpp
     src/nodes/stereo_matcher_node.cpp
+    src/nodes/disparity_filters.hpp
+    src/nodes/disparity_filters.cpp
+    src/nodes/fgs_filter.hpp
+    src/nodes/fgs_filter.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_stereo_matcher_node
