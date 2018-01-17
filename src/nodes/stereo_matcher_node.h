@@ -9,6 +9,7 @@
 
 #include "undistortion.hpp"
 #include "calibration.hpp"
+#include "disparity_filters.hpp"
 
 namespace rawseeds_ros {
 class StereoMatcherNode
@@ -46,7 +47,13 @@ private:
     Undistortion::Ptr           undistortion_left_;
     Undistortion::Ptr           undistortion_right_;
 
-    bool                        debug_;
+    bool                                      debug_;
+    bool                                      use_wls_filter_;
+    double                                    wls_sigma_;
+    double                                    wls_lambda_;
+
+    cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter_;
+    cv::Ptr<cv::StereoMatcher>                wls_right_matcher_;
 
     bool setup();
 

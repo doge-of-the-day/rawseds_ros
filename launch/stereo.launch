@@ -66,5 +66,8 @@
         </rosparam>
         <param name="debug" value="false" />
         <param name="matcher_type" value="SGBM" />
+        <param name="use_wls_filter" value="true" />
+        <param name="wls_lambda" value="8000.0" />
+        <param name="wls_sigma" value ="2.0" />
   </node>
 </launch>

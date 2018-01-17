@@ -6,6 +6,7 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <omp.h>
+#include <thread>
 
 namespace rawseeds_ros {
 StereoMatcherNode::StereoMatcherNode() :
@@ -79,6 +80,7 @@ bool StereoMatcherNode::setup()
                                            speckle_window_size,
                                            speckle_range,
                                            mode);
+
         matcher_ = sgbm;
     } else {
         std::cerr << "Unknown matcher type." << "\n";
@@ -196,6 +198,17 @@ bool StereoMatcherNode::setup()
 
     if(debug_) {
         ROS_WARN_STREAM("Debug mode is on!");
+    }
+
+
+    wls_sigma_      = nh_.param<double>("wls_sigma", 0.5);
+    wls_lambda_     = nh_.param<double>("wls_lambda", 8000.0);
+    use_wls_filter_ = nh_.param<double>("use_wls_filter", false);
+    if(use_wls_filter_) {
+        wls_filter_ = cv::ximgproc::createDisparityWLSFilter(matcher_);
+        wls_filter_->setSigmaColor(wls_sigma_);
+        wls_filter_->setLambda(wls_lambda_);
+        wls_right_matcher_ = cv::ximgproc::createRightMatcher(matcher_);
     }
 
     ROS_INFO_STREAM("Setup finished quite nicely!");
@@ -359,11 +372,30 @@ void StereoMatcherNode::match()
     cv::Mat left_rectified, right_rectified;
     undistortion_left_->apply(left, left_rectified);
     undistortion_right_->apply(right, right_rectified);
-    cv::Mat disparity;
-    matcher_->compute(left_rectified, right_rectified, disparity);
 
     cv::Mat disparity_f;
-    disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0);
+    if(use_wls_filter_) {
+        cv::Mat disparity, disparity_left, disparity_right;
+        auto match_left = [&left_rectified, &right_rectified, disparity_left, this]() {
+            matcher_->compute(left_rectified, right_rectified, disparity_left);
+        };
+        auto match_right = [&left_rectified, &right_rectified, disparity_right, this]() {
+            wls_right_matcher_->compute(right_rectified, left_rectified, disparity_right);
+        };
+
+        std::thread tl = std::thread(match_left);
+        std::thread tr = std::thread(match_right);
+        tl.join();
+        tr.join();
+
+        wls_filter_->filter(disparity_left, disparity, disparity_right);
+        disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0);
+    } else {
+        cv::Mat disparity;
+        matcher_->compute(left_rectified, right_rectified, disparity);
+        disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0);
+    }
+
 
     cv::Mat xyz(disparity_f.rows, disparity_f.cols, CV_32FC3, cv::Scalar());
     cv::reprojectImageTo3D(disparity_f, xyz, Q_, true);
