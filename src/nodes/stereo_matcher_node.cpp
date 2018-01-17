@@ -192,6 +192,7 @@ bool StereoMatcherNode::setup()
     sub_right_info_ = nh_.subscribe<sensor_msgs::CameraInfo>(topic_right_info, queue_size, &StereoMatcherNode::right, this);
     pub_points_     = nh_.advertise<sensor_msgs::PointCloud2>(topic_points, 1);
 
+    max_depth_      = nh_.param<double>("max_depth", 25.0);
 
     time_delta_ = nh_.param<double>("time_delta", 1e-8);
     debug_      = nh_.param<bool>("debug", false);
@@ -359,11 +360,22 @@ void StereoMatcherNode::match()
         ROS_WARN_STREAM("Dropping matching because of missing right calibration!");
         return;
     }
-
-    if(!left_img_)
+    if(!left_img_) {
+        ROS_WARN_STREAM("Dropping matching because of missing left image!");
         return;
-    if(!right_img_)
+    }
+    if(!right_img_) {
+        ROS_WARN_STREAM("Dropping matching because of missing right image!");
         return;
+    }
+    if(!undistortion_left_) {
+        ROS_WARN_STREAM("Dropping matching because of missing left undistortion!");
+        return;
+    }
+    if(!undistortion_right_) {
+        ROS_WARN_STREAM("Dropping matching because of missing right undistortion!");
+        return;
+    }
 
     cv::Mat left(S_.height, S_.width, CV_8UC1, cv::Scalar());
     cv::Mat right(S_.height, S_.width, CV_8UC1, cv::Scalar());
@@ -409,22 +421,32 @@ void StereoMatcherNode::match()
     using PointCloud = pcl::PointCloud<Point>;
 
     PointCloud::Ptr pointcloud(new PointCloud);
+    pointcloud->header.frame_id = left_img_->header.frame_id;
+    pcl_conversions::toPCL(now, pointcloud->header.stamp);
     pointcloud->points.resize(static_cast<std::size_t>(xyz.rows * xyz.cols));
     pointcloud->height = static_cast<unsigned int>(xyz.rows);
     pointcloud->width  = static_cast<unsigned int>(xyz.cols);
+    pointcloud->is_dense = false;
 
 #pragma omp parallel for
     for(int i = 0 ; i < xyz.rows; ++i) {
         for(int j = 0 ; j < xyz.cols ; ++j) {
             const cv::Point3f   & pxyz = xyz.at<cv::Point3f>(i,j);
+
             const unsigned char g  = left_rectified.at<unsigned char>(i,j);
             Point &p = pointcloud->at(j,i);
-            p.x = pxyz.x;
-            p.y = pxyz.y;
-            p.z = pxyz.z;
-            p.r = g;
-            p.g = g;
-            p.b = g;
+            if(pxyz.z >= max_depth_) {
+                p.x = std::numeric_limits<float>::quiet_NaN();
+                p.y = std::numeric_limits<float>::quiet_NaN();
+                p.z = std::numeric_limits<float>::quiet_NaN();
+            } else {
+                p.x = pxyz.x;
+                p.y = pxyz.y;
+                p.z = pxyz.z;
+                p.r = g;
+                p.g = g;
+                p.b = g;
+            }
         }
     }
 
@@ -439,6 +461,7 @@ void StereoMatcherNode::match()
     sensor_msgs::PointCloud2 pointcloud_msg;
     pcl::toROSMsg(*pointcloud, pointcloud_msg);
     pointcloud_msg.header = left_img_->header;
+    pointcloud_msg.header.stamp = now;
 
     pub_points_.publish(pointcloud_msg);
     pub_last_time_ = now;

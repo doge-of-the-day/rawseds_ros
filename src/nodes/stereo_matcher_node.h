@@ -55,6 +55,8 @@ private:
     cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter_;
     cv::Ptr<cv::StereoMatcher>                wls_right_matcher_;
 
+    double                                    max_depth_;
+
     bool setup();
 
     void left(const sensor_msgs::ImageConstPtr &msg);
