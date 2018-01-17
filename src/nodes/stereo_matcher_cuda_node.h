@@ -28,6 +28,9 @@ private:
     ros::Subscriber             sub_right_info_;
     ros::Publisher              pub_points_;
 
+    ros::Duration               pub_period_;
+    ros::Time                   pub_last_time_;
+
     sensor_msgs::ImageConstPtr  left_img_;
     sensor_msgs::ImageConstPtr  right_img_;
 

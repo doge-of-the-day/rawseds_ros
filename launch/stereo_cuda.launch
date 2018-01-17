@@ -2,7 +2,7 @@
 <launch>
   <!--  <include file="$(find rawseeds_ros)/launch/transforms.launch" /> -->
 
-  <node name="rawseeds_ros_stereo_cuda_matcher" pkg="rawseeds_ros" type="rawseeds_ros_stereo_cuda_matcher_node" required="true" output="screen">
+  <node name="rawseeds_ros_stereo_matcher_cuda" pkg="rawseeds_ros" type="rawseeds_ros_stereo_matcher_cuda_node" required="true" output="screen">
         <rosparam param="K_left">
         [ 6.6001269136574888e+02, 0., 3.1664116609221276e+02, 
           0., 6.6002683924253938e+02, 2.1464570978046871e+02, 
@@ -65,6 +65,6 @@
             [640, 480]
         </rosparam>
         <param name="debug" value="false" />
-        <param name="matcher_type" value="BM" />
+        <param name="matcher_type" value="CSBP" />
   </node>
 </launch>

@@ -23,7 +23,7 @@ public:
         assert(left.rows == right.rows);
         assert(left.cols == right.cols);
 
-        disparity_ = cv::cuda::GpuMat(left.rows, right.rows, CV_16S);
+        disparity_ = cv::cuda::GpuMat(left.rows, right.rows, CV_8UC1);
 
         left_.upload(left);
         right_.upload(right);

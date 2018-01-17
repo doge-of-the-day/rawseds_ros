@@ -200,6 +200,10 @@ bool StereoMatcherNode::setup()
 
     ROS_INFO_STREAM("Setup finished quite nicely!");
 
+    const double pub_rate = nh_.param<double>("rate", 0.0);
+    pub_period_    = ros::Duration(pub_rate > 0.0 ? 1.0 / pub_rate : 0.0);
+    pub_last_time_ = ros::Time::now();
+
     return true;
 }
 
@@ -330,6 +334,10 @@ void StereoMatcherNode::stereoRectify()
 
 void StereoMatcherNode::match()
 {
+    ros::Time now = ros::Time::now();
+    if(pub_last_time_ + pub_period_ > now)
+        return;
+
     if(!calibration_left_) {
         ROS_WARN_STREAM("Dropping matching because of missing left calibration!");
         return;
@@ -396,6 +404,7 @@ void StereoMatcherNode::match()
     pointcloud_msg.header = left_img_->header;
 
     pub_points_.publish(pointcloud_msg);
+    pub_last_time_ = now;
 }
 }
 

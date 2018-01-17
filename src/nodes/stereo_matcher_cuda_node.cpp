@@ -32,8 +32,8 @@ bool StereoMatcherCudaNode::setup()
     ROS_INFO_STREAM("Initializing the matcher.");
     const std::string matcher_type = nh_.param<std::string>("matcher_type", "BM");
     if(matcher_type == "BM") {
-        int num_disparitites        = nh_.param<int>("num_disparitites"     , 64);
-        int block_size              = nh_.param<int>("block_size"           , 19);
+        int num_disparitites        = nh_.param<int>("num_disparitites"     , 48);
+        int block_size              = nh_.param<int>("block_size"           , 51);
         auto bm = cv::cuda::createStereoBM(num_disparitites, block_size);
         matcher_.reset(new cuda::MatcherImpl<cv::cuda::StereoBM>(bm));
 
@@ -174,6 +174,10 @@ bool StereoMatcherCudaNode::setup()
 
     ROS_INFO_STREAM("Setup finished quite nicely!");
 
+    const double pub_rate = nh_.param<double>("rate", 0.0);
+    pub_period_    = ros::Duration(pub_rate > 0.0 ? 1.0 / pub_rate : 0.0);
+    pub_last_time_ = ros::Time::now();
+
     return true;
 }
 
@@ -304,6 +308,10 @@ void StereoMatcherCudaNode::stereoRectify()
 
 void StereoMatcherCudaNode::match()
 {
+    ros::Time now = ros::Time::now();
+    if(pub_last_time_ + pub_period_ > now)
+        return;
+
     if(!calibration_left_) {
         ROS_WARN_STREAM("Dropping matching because of missing left calibration!");
         return;
@@ -329,7 +337,7 @@ void StereoMatcherCudaNode::match()
     matcher_->compute(left_rectified, right_rectified, disparity);
 
     cv::Mat disparity_f;
-    disparity.convertTo(disparity_f, CV_32FC1, 1.0 / 16.0);
+    disparity.convertTo(disparity_f, CV_32FC1);
 
     cv::Mat xyz(disparity_f.rows, disparity_f.cols, CV_32FC3, cv::Scalar());
     cv::reprojectImageTo3D(disparity_f, xyz, Q_, true);
@@ -370,6 +378,7 @@ void StereoMatcherCudaNode::match()
     pointcloud_msg.header = left_img_->header;
 
     pub_points_.publish(pointcloud_msg);
+    pub_last_time_ = now;
 }
 }
 
