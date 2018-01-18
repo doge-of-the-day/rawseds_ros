@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
     rospy
     pcl_conversions
     message_generation
+    tf
 )
 
 set(USE_OMP true)
@@ -68,6 +69,26 @@ target_link_libraries(${PROJECT_NAME}_stereo_matcher_node
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
 )
+
+find_package(cslibs_indexed_storage QUIET)
+
+if(${cslibs_indexed_storage_FOUND})
+include_directories(
+    ${cslibs_indexed_storage_INCLUDE_DIRS}
+)
+add_executable(${PROJECT_NAME}_pointcloud_filter_node
+    src/nodes/pointcloud_filter_node.cpp
+    src/nodes/voxel.hpp
+)
+
+target_link_libraries(${PROJECT_NAME}_pointcloud_filter_node
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${cslibs_indexed_storage_LIBRARIES}
+)
+endif()
+
 
 if(${OpenCV_CUDA_VERSION})
     message("[${PROJECT_NAME}]: Compilining with OpenCV cuda!")
