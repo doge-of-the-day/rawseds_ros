@@ -139,7 +139,7 @@ void PointcloudFilterNode::voxelFilter(const  pcl::PointCloud<pcl::PointXYZRGB>:
                                 static_cast<int>(pt.z() / voxel_resolution_[2])}};
     };
 
-    ros::Time stamp ;
+    ros::Time stamp;
     pcl_conversions::fromPCL(src->header.stamp, stamp);
     if(filter_frame_ != src->header.frame_id) {
         tf::StampedTransform t;
@@ -149,7 +149,7 @@ void PointcloudFilterNode::voxelFilter(const  pcl::PointCloud<pcl::PointXYZRGB>:
                 const tf::Point p_pcl  = tf::Point(p_src.x, p_src.y, p_src.z);
                 const tf::Point p_tf = t * p_pcl;
                 const tf::Point c_tf = tf::Point(p_src.r, p_src.g, p_src.b);
-                voxel_grid->insert(index(p_pcl), Voxel(p_tf, c_tf));
+                voxel_grid->insert(index(p_pcl), Voxel(p_pcl, c_tf));
             }
         }
     } else {
