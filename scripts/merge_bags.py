@@ -60,7 +60,7 @@ def main():
 
 
     print('Writing to file ' + path + file_extension + '.')
-    out_bag = rosbag.Bag(path + file_extension, 'w',  compression='bz2')
+    out_bag = rosbag.Bag(path + file_extension, 'w')
     while True:
         if out_bag.size >= split_size and split_size != 0:
             out_bag.close()
