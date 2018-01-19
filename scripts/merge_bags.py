@@ -66,7 +66,7 @@ def main():
             out_bag.close()
             split += 1
             path = filename + "_" + str(split)  
-            out_bag = rosbag.Bag(path + file_extension, 'w', compression='bz2')
+            out_bag = rosbag.Bag(path + file_extension, 'w')
             print('Writing to file ' + path + file_extension + '.')
 
         state = 'Progress: ' + '{0:.2f}'.format((n_messages + 1) / (1.0 * message_count) * 100) + '%'
