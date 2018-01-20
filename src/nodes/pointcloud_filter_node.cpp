@@ -42,8 +42,8 @@ void PointcloudFilterNode::setup()
     voxel_resolution_[2] = nh_.param<double>("voxel/resolution/z", 0.1);
 
     const std::string topic_pointcloud      = nh_.param<std::string>("topic_pointcloud", "/svs_l/points");
-    const std::string topic_filtered_volume = nh_.param<std::string>("topic_volume_filtered", "svs_l/filtered");
-    const std::string topic_filtered_voxel  = nh_.param<std::string>("topic_volume_filtered", "svs_l/filtered_voxels");
+    const std::string topic_filtered_volume = nh_.param<std::string>("topic_volume_filtered", "/svs_l/filtered_points");
+    const std::string topic_filtered_voxel  = nh_.param<std::string>("topic_volume_filtered", "/svs_l/filtered_voxels");
 
     sub_pointcloud_ = nh_.subscribe(topic_pointcloud, 1, &PointcloudFilterNode::pointcloud, this);
     pub_volume_filtered_ = nh_.advertise<sensor_msgs::PointCloud2>(topic_filtered_volume, 1);

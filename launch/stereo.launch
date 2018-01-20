@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <!--<include file="$(find rawseeds_ros)/launch/transforms.launch" />-->
+  <include file="$(find rawseeds_ros)/launch/transforms.launch" />
 
   <node name="rawseeds_ros_stereo_matcher" pkg="rawseeds_ros" type="rawseeds_ros_stereo_matcher_node" required="true" output="screen">
         <rosparam param="K_left">
@@ -73,7 +73,8 @@
         <param name="max_depth" value="25.0" />
 
   </node>
-  <node name="rawseeds_ros_pointcloud_filter_node" pkg="rawseeds_ros" type="rawseeds_ros_pointcloud_filter_node" required="true" output="screen">
-
+  <node name="rawseeds_ros_pointcloud_filter_node" pkg="rawseeds_ros" type="rawseeds_ros_pointcloud_filter_node" output="screen" respawn="true" >
+  	<param name="volume/min/y" value="-5.0" />
+	<param name="volume/min/y" value="+5.0" />
   </node>
 </launch>
