@@ -75,6 +75,6 @@
   </node>
   <node name="rawseeds_ros_pointcloud_filter_node" pkg="rawseeds_ros" type="rawseeds_ros_pointcloud_filter_node" output="screen" respawn="true" >
   	<param name="volume/min/y" value="-5.0" />
-	<param name="volume/min/y" value="+5.0" />
+        <param name="volume/max/y" value="+5.0" />
   </node>
 </launch>

@@ -33,9 +33,9 @@ void PointcloudFilterNode::setup()
     volume_min_[0] = nh_.param<double>("volume/min/x", -10.0);
     volume_min_[1] = nh_.param<double>("volume/min/y", -10.0);
     volume_min_[2] = nh_.param<double>("volume/min/z",   0.0);
-    volume_max_[0] = nh_.param<double>("volume/min/x",  10.0);
-    volume_max_[1] = nh_.param<double>("volume/min/y",  10.0);
-    volume_max_[2] = nh_.param<double>("volume/min/z",   4.0);
+    volume_max_[0] = nh_.param<double>("volume/max/x",  10.0);
+    volume_max_[1] = nh_.param<double>("volume/max/y",  10.0);
+    volume_max_[2] = nh_.param<double>("volume/max/z",   4.0);
 
     voxel_resolution_[0] = nh_.param<double>("voxel/resolution/x", 0.1);
     voxel_resolution_[1] = nh_.param<double>("voxel/resolution/y", 0.1);
