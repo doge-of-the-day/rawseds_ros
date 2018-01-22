@@ -435,7 +435,9 @@ void StereoMatcherNode::match()
 
             const unsigned char g  = left_rectified.at<unsigned char>(i,j);
             Point &p = pointcloud->at(j,i);
-            if(pxyz.z >= max_depth_) {
+            if(pxyz.z >= max_depth_ ||
+                    undistortion_left_->getMask().at<uchar>(i, j) == 0 ||
+                    undistortion_right_->getMask().at<uchar>(i, j) == 0) {
                 p.x = std::numeric_limits<float>::quiet_NaN();
                 p.y = std::numeric_limits<float>::quiet_NaN();
                 p.z = std::numeric_limits<float>::quiet_NaN();
@@ -455,6 +457,10 @@ void StereoMatcherNode::match()
         cv::imshow("disparity", disparity_f);
         cv::imshow("left_rectified", left_rectified);
         cv::imshow("right_rectified", right_rectified);
+
+        cv::Mat and_mask = undistortion_left_->getMask().clone();
+        cv::bitwise_and(undistortion_left_->getMask(), undistortion_right_->getMask(), and_mask);
+        cv::imshow("mask", and_mask);
         cv::waitKey(5);
     }
 

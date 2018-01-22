@@ -2,7 +2,7 @@
 <launch>
   <!--<include file="$(find rawseeds_ros)/launch/transforms.launch" />-->
 
-  <node name="rawseeds_ros_stereo_matcher" pkg="rawseeds_ros" type="rawseeds_ros_stereo_matcher_node" required="true" output="screen">
+  <node name="rawseeds_ros_stereo_matcher" pkg="rawseeds_ros" type="rawseeds_ros_stereo_matcher_node" respawn="true" output="screen" clear_params="true">
         <rosparam param="K_left">
         [ 6.6001269136574888e+02, 0., 3.1664116609221276e+02, 
           0., 6.6002683924253938e+02, 2.1464570978046871e+02, 
@@ -71,9 +71,10 @@
         <param name="wls_sigma" value ="2.0" />
         <param name="rate" value="10.0" />
         <param name="max_depth" value="25.0" />
+	<param name="block_size" value="7" />
 
   </node>
-  <node name="rawseeds_ros_pointcloud_filter_node" pkg="rawseeds_ros" type="rawseeds_ros_pointcloud_filter_node" required="true" output="screen">
+  <node name="rawseeds_ros_pointcloud_filter_node" pkg="rawseeds_ros" type="rawseeds_ros_pointcloud_filter_node" respawn="true" output="screen" clear_params="true">
 
   </node>
 </launch>
