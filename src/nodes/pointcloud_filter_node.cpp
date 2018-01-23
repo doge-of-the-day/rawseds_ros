@@ -89,11 +89,11 @@ void PointcloudFilterNode::volumeFilter(const  pcl::PointCloud<pcl::PointXYZRGB>
     {
         return p.x() >= volume_min_[0] && p.x() <= volume_max_[0];
     };
-    auto in_y_limites = [this](const tf::Point &p)
+    auto in_y_limits = [this](const tf::Point &p)
     {
         return p.y() >= volume_min_[1] && p.y() <= volume_max_[1];
     };
-    auto in_z_limites = [this](const tf::Point &p)
+    auto in_z_limits = [this](const tf::Point &p)
     {
         return p.z() >= volume_min_[2] && p.z() <= volume_max_[2];
     };
@@ -106,7 +106,7 @@ void PointcloudFilterNode::volumeFilter(const  pcl::PointCloud<pcl::PointXYZRGB>
             tf_.lookupTransform(filter_frame_, src->header.frame_id, stamp, t);
             for(const pcl::PointXYZRGB &p_src : src->points) {
                 const tf::Point p_tf = t * tf::Point(p_src.x, p_src.y, p_src.z);
-                if(in_x_limits(p_tf) && in_y_limites(p_tf) && in_z_limites(p_tf)) {
+                if(in_x_limits(p_tf) && in_y_limits(p_tf) && in_z_limits(p_tf)) {
                     filtered->points.emplace_back(p_src);
                 }
             }
@@ -114,7 +114,7 @@ void PointcloudFilterNode::volumeFilter(const  pcl::PointCloud<pcl::PointXYZRGB>
     } else {
         for(const pcl::PointXYZRGB &p_src : src->points) {
             const tf::Point p_tf = tf::Point(p_src.x, p_src.y, p_src.z);
-            if(in_x_limits(p_tf) && in_y_limites(p_tf) && in_z_limites(p_tf)) {
+            if(in_x_limits(p_tf) && in_y_limits(p_tf) && in_z_limits(p_tf)) {
                 filtered->points.emplace_back(p_src);
             }
         }
