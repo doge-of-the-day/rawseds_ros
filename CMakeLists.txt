@@ -25,7 +25,7 @@ if(${USE_OMP})
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-    message("[${PROJECT_NAME}]: Compilining with OpenMP!")
+    message("[${PROJECT_NAME}]: Compiling with OpenMP!")
 endif()
 
 find_package(OpenCV REQUIRED)
@@ -47,6 +47,7 @@ catkin_package(
 )
 
 include_directories(
+  include
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
@@ -91,7 +92,7 @@ endif()
 
 
 if(${OpenCV_CUDA_VERSION})
-    message("[${PROJECT_NAME}]: Compilining with OpenCV cuda!")
+    message("[${PROJECT_NAME}]: Compiling with OpenCV cuda!")
     add_executable(${PROJECT_NAME}_stereo_matcher_cuda_node
         src/nodes/undistortion.hpp
         src/nodes/calibration.hpp
