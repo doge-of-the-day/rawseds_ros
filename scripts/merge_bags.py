@@ -19,16 +19,9 @@ def find_next_index(next):
     return i_next
 
 
-def main():
-    parser = argparse.ArgumentParser(description='merge multiple bag files into one')
-    parser.add_argument('-o', '--output', help='name of output bag file')
-    parser.add_argument('-i', '--input', nargs='+', help='list of input bag files')
-    parser.add_argument('-s', '--split_size', help='split size if bag should be splitted')
-
-    args = parser.parse_args()
-
-    print('Input files:  ' + str(args.input))
-    print('Output file: ' + args.output)
+def main(args):
+    print('[input files]: ' + str(args.input))
+    print('[output file]: ' + args.output)
     if args.split_size:
         print("Splitting every " + str(int(args.split_size) / (1024.0 * 1024.0))) + "MB"
 
@@ -95,4 +88,10 @@ def main():
     print(str(n_messages) + " messages merged in total")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Merge multiple bag files into one.')
+    parser.add_argument('-o', '--output', help='Name of the output bag file.')
+    parser.add_argument('-i', '--input', nargs='+', help='List of input bag files.')
+    parser.add_argument('-s', '--split_size', help='Split size if bag should be splitted.')
+    args = parser.parse_args()
+
+    main(args)
