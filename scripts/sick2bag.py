@@ -52,7 +52,7 @@ def main():
                 # create message:
                 msg = sensor_msgs.msg.LaserScan()
                 msg.header.frame_id = args.frame_id
-                msg.header.stamp = rospy.Time.from_sec(t)
+                msg.header.stamp    = rospy.Time.from_sec(t)
 
                 msg.angle_min       = -numpy.pi/2.0
                 msg.angle_max       = +numpy.pi/2.0
@@ -60,13 +60,12 @@ def main():
                 
                 msg.scan_time       = (next_t - t)
  
-                msg.time_increment  = msg.scan_time / (n_ranges - 1)  # this should be fine now
-                msg.range_min       = 0.015  # in meters, assuming this goes ok with the systematic error of the sensor
-                msg.range_max       = 80.0   # in meters
+                msg.time_increment  = msg.scan_time / float(n_ranges)  # this should be fine now
+                msg.range_min       = 0.015                            # in meters, assuming this goes ok with the systematic error of the sensor
+                msg.range_max       = 80.0                             # in meters
 
                 msg.ranges = ranges
 
-                last_t = t
                 out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
 
                 n_messages += 1
