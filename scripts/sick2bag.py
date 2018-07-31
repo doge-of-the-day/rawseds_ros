@@ -25,6 +25,8 @@ def main():
     max_range = 0.
     min_range = 100.
 
+    last_t = 0.0
+
     with rosbag.Bag(args.output, 'w') as out_bag:
         with open(args.input) as in_file:
             count = len(in_file.readlines())
@@ -33,10 +35,9 @@ def main():
                 # read line:
                 row = line.split(',')
 
-                t = float(row[0])  # timestamp in SECONDS (doc incorrectly says microseconds)
+                t        = float(row[0])  # timestamp in SECONDS (doc incorrectly says microseconds)
                 n_ranges = int(row[1])
-                angular_offset = float(row[2]) # in 1/4 degree
-                angular_offset *= numpy.pi/(4.*180.)
+
                 ranges = map(float, row[3:])  # ranges in meters
                 assert n_ranges == len(ranges)
 
@@ -48,16 +49,22 @@ def main():
                 msg.header.frame_id = args.frame_id
                 msg.header.stamp = rospy.Time.from_sec(t)
 
-                msg.angle_min = -numpy.pi/2 + angular_offset
-                msg.angle_max = +numpy.pi/2 + angular_offset
-                msg.angle_increment = numpy.pi/180
-                msg.time_increment = 0.  # don't know, actually :/
-                msg.scan_time = 0.1    # time between consecutive scans in seconds
-                msg.range_min = 0.0    # in meters
-                msg.range_max = 81.91  # in meters
+                msg.angle_min       = -numpy.pi/2.0
+                msg.angle_max       = +numpy.pi/2.0
+                msg.angle_increment = numpy.pi/(n_ranges - 1)
+                
+                if(last_t == 0.0):
+                    msg.scan_time    = 1. / 75.    # time between consecutive scans in seconds
+                else:
+                    msg.scan_time = (t - last_t)
+ 
+                msg.time_increment  = msg.scan_time / (n_ranges - 1)  # this should be fine now
+                msg.range_min       = 0.015  # in meters, assuming this goes ok with the systematic error of the sensor
+                msg.range_max       = 80.0   # in meters
 
                 msg.ranges = ranges
 
+                last_t = t
                 out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
 
                 n_messages += 1

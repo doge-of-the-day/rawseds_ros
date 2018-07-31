@@ -25,6 +25,9 @@ def main():
     max_range = 0.
     min_range = 100.
 
+    last_t = 0.0
+
+    n_ranges = 681
     with rosbag.Bag(args.output, 'w') as out_bag:
         with open(args.input) as input_file:
             count = len(input_file.readlines())
@@ -53,10 +56,19 @@ def main():
                 msg.scan_time = 0.1  # time between consecutive scans in seconds
                 msg.range_min = 0.0 # in meters
                 msg.range_max = 5.6 # in meters
+               
+                if(last_t == 0.0):
+                    msg.scan_time    = 1. / 10.    # time between consecutive scans in seconds
+                else:
+                    msg.scan_time = (t - last_t)
 
+                msg.time_increment  = msg.scan_time / (n_ranges - 1)  # this should be fine now
+ 
                 msg.ranges = ranges
 
                 out_bag.write(args.topic, msg, rospy.Time.from_sec(t))
+
+                last_t = t
 
                 n_messages += 1
 
