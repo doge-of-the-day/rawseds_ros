@@ -25,16 +25,21 @@ def main():
     max_range = 0.
     min_range = 100.
 
-    last_t = 0.0
+    next_t = 0.0
 
     n_ranges = 681
     with rosbag.Bag(args.output, 'w') as out_bag:
-        with open(args.input) as input_file:
-            count = len(input_file.readlines())
-            input_file.seek(0)
-            for i, line in enumerate(input_file):
-                # read line:
-                row = line.split(',')
+        with open(args.input) as in_file:
+            count = len(in_file.readlines())
+            in_file.seek(0)
+          
+            content = in_file.readlines()
+            for i in range(count):
+                row = content[i].split(',')
+                if i < count - 1:
+                    next_t = float((content[i+1].split(','))[0])
+                else:
+                    next_t = 1. / 10.
 
                 t = float(row[0])  # timestamp in SECONDS (doc incorrectly says microseconds)
                 ranges = map(float, row[1:])  # ranges in meters
@@ -49,18 +54,13 @@ def main():
 
                 d_angle = (2*numpy.pi)/1024
 
-                msg.angle_min = -340*d_angle
-                msg.angle_max = +340*d_angle
+                msg.angle_min       = -340*d_angle
+                msg.angle_max       = +340*d_angle
                 msg.angle_increment = d_angle
-                msg.time_increment = 0.  # don't know, actually :/
-                msg.scan_time = 0.1  # time between consecutive scans in seconds
-                msg.range_min = 0.0 # in meters
-                msg.range_max = 5.6 # in meters
+                msg.range_min       = 0.0 # in meters
+                msg.range_max       = 5.6 # in meters
                
-                if(last_t == 0.0):
-                    msg.scan_time    = 1. / 10.    # time between consecutive scans in seconds
-                else:
-                    msg.scan_time = (t - last_t)
+                msg.scan_time       = (next_t - t)
 
                 msg.time_increment  = msg.scan_time / (n_ranges - 1)  # this should be fine now
  

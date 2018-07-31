@@ -25,15 +25,20 @@ def main():
     max_range = 0.
     min_range = 100.
 
-    last_t = 0.0
+    next_t = 0.0
 
     with rosbag.Bag(args.output, 'w') as out_bag:
         with open(args.input) as in_file:
             count = len(in_file.readlines())
             in_file.seek(0)
-            for i, line in enumerate(in_file):
-                # read line:
-                row = line.split(',')
+            
+            content = in_file.readlines()
+            for i in range(count):
+                row = content[i].split(',')
+                if i < count - 1:
+                    next_t = float((content[i+1].split(','))[0])
+                else:
+                    next_t = 1. / 75.
 
                 t        = float(row[0])  # timestamp in SECONDS (doc incorrectly says microseconds)
                 n_ranges = int(row[1])
@@ -51,12 +56,9 @@ def main():
 
                 msg.angle_min       = -numpy.pi/2.0
                 msg.angle_max       = +numpy.pi/2.0
-                msg.angle_increment = numpy.pi/(n_ranges - 1)
+                msg.angle_increment =  numpy.pi/(n_ranges - 1)
                 
-                if(last_t == 0.0):
-                    msg.scan_time    = 1. / 75.    # time between consecutive scans in seconds
-                else:
-                    msg.scan_time = (t - last_t)
+                msg.scan_time       = (next_t - t)
  
                 msg.time_increment  = msg.scan_time / (n_ranges - 1)  # this should be fine now
                 msg.range_min       = 0.015  # in meters, assuming this goes ok with the systematic error of the sensor
@@ -71,6 +73,8 @@ def main():
 
                 state = 'Progress: ' + '{0:.2f}'.format(i / (1.0 * count) * 100) + '%'
                 sys.stdout.write('%s\r' % state)
+
+
 
     print
     print("Conversion of %d messages done." % n_messages)
