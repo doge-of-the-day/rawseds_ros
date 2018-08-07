@@ -47,6 +47,13 @@ typedef float WorkType;
 typedef Vec<WorkType, 1> WorkVec;
 typedef WorkType (*get_weight_op)(WorkType*, unsigned char*,unsigned char*);
 
+#if CV_VERSION_MAJOR >= 3 && CV_VERSION_MINOR >= 3
+static const auto CV_TYPE = traits::Type<WorkVec>::value;
+#else
+static const auto CV_TYPE = cv::DataType<WorkVec>::type;
+#endif
+
+
 inline WorkType get_weight_1channel(WorkType* LUT, unsigned char* p1,unsigned char* p2)
 {
     return LUT[ (p1[0]-p2[0])*(p1[0]-p2[0]) ];
@@ -148,16 +155,16 @@ void FastGlobalSmootherFilterImpl::init(InputArray guide,double _lambda,double _
     num_iter = _num_iter;
     num_stripes = getNumThreads();
     int num_levels = 3*256*256;
-    weights_LUT.create(1,num_levels,traits::Type<WorkVec>::value);
+    weights_LUT.create(1,num_levels,CV_TYPE);
 
     WorkType* LUT = (WorkType*)weights_LUT.ptr(0);
     parallel_for_(Range(0,num_stripes),ComputeLUT_ParBody(*this,LUT,num_stripes,num_levels));
 
     w = guide.cols();
     h = guide.rows();
-    Chor.  create(h,w,traits::Type<WorkVec>::value);
-    Cvert. create(h,w,traits::Type<WorkVec>::value);
-    interD.create(h,w,traits::Type<WorkVec>::value);
+    Chor.  create(h,w,CV_TYPE);
+    Cvert. create(h,w,CV_TYPE);
+    interD.create(h,w,CV_TYPE);
     Mat guideMat = guide.getMat();
 
     if(guide.channels() == 1)
@@ -201,8 +208,8 @@ void FastGlobalSmootherFilterImpl::filter(InputArray src, OutputArray dst)
     {
         lambda = lambda_ref;
         Mat cur_res = src_channels[i].clone();
-        if(src.depth()!=traits::Type<WorkVec>::value)
-            cur_res.convertTo(cur_res,traits::Type<WorkVec>::value);
+        if(src.depth()!=CV_TYPE)
+            cur_res.convertTo(cur_res,CV_TYPE);
 
         for(int n=0;n<num_iter;n++)
         {
@@ -212,7 +219,7 @@ void FastGlobalSmootherFilterImpl::filter(InputArray src, OutputArray dst)
         }
 
         Mat dstMat;
-        if(src.depth()!=traits::Type<WorkVec>::value)
+        if(src.depth()!=CV_TYPE)
             cur_res.convertTo(dstMat,src.depth());
         else
             dstMat = cur_res;
