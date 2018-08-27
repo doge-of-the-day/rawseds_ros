@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='convert rawseeds odometry data to ROS bag file')
     parser.add_argument('input', help='input rawseeds file')
     parser.add_argument('output', help='name of output bag file')
-    parser.add_argument('--frame_id', type=str, default="/odom_gt", help='frame_id for ROS message')
+    parser.add_argument('--frame_id', type=str, default="odom_gt", help='frame_id for ROS message')
     parser.add_argument('--topic', type=str, default="/odom_gt", help='topic name for ROS message')
 
 

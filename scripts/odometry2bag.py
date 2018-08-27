@@ -19,7 +19,7 @@ def main():
     print('Input file:  ' + args.input)
     print('Output file: ' + args.output)
 
-    frame_id = '/odom'
+    frame_id = 'odom'
     topic = '/odom'
 
     n_messages = 0
