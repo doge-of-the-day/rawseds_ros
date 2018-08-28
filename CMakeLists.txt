@@ -54,6 +54,17 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+add_executable(${PROJECT_NAME}_check_bag
+    src/tools/check_bag.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}_check_bag
+    ${Boost_LIBRARIES}
+    ${OpenCV_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+)
+
 add_executable(${PROJECT_NAME}_stereo_matcher_node
     src/nodes/undistortion.hpp
     src/nodes/calibration.hpp
