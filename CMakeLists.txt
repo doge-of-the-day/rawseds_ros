@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rawseeds_ros)
 
-find_package(Boost COMPONENTS program_options REQUIRED)
-find_package(catkin REQUIRED
+include(cmake/rawseeds_ros_enable_c++17.cmake)
+
+find_package(Boost REQUIRED COMPONENTS
+    program_options
+)
+
+find_package(catkin REQUIRED COMPONENTS
     camera_info_manager
     sensor_msgs
     stereo_msgs
@@ -14,9 +19,14 @@ find_package(catkin REQUIRED
     tf
 )
 
+add_definitions(-Wno-dev)
+
 set(USE_OMP true)
 if(${USE_OMP})
-    add_definitions(-DUSE_OMP)
+    set(TARGET_COMPILE_DEFINITIONS
+        -DUSE_OMP
+    )
+
     find_package(OpenMP  REQUIRED)
     set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -25,11 +35,10 @@ if(${USE_OMP})
 endif()
 
 find_package(OpenCV REQUIRED)
-find_package(PCL REQUIRED)
-
-set(TARGET_COMPILE_DEFINITIONS
-    -std=c++11 # Or -std=c++0x
+find_package(PCL REQUIRED COMPONENTS
+    visualization
 )
+
 
 set(TARGET_INCLUDE_DIRS
     ${Boost_INCLUDE_DIR}
@@ -57,7 +66,9 @@ generate_messages(
 )
 
 catkin_package(
-    CATKIN_DEPENDS message_runtime rospy
+    CATKIN_DEPENDS
+        message_runtime
+        rospy
 )
 
 add_executable(${PROJECT_NAME}_check_bag
@@ -107,8 +118,9 @@ if(${cslibs_indexed_storage_FOUND})
     target_include_directories(${PROJECT_NAME}_pointcloud_filter_node
         SYSTEM PRIVATE
             ${TARGET_INCLUDE_DIRS}
+            ${cslibs_indexed_storage_INCLUDE_DIRS}
     )
-    target_include_directories(${PROJECT_NAME}_steroe_matcher_node
+    target_include_directories(${PROJECT_NAME}_stereo_matcher_node
     PRIVATE
         ${cslibs_indexed_storage_INCLUDE_DIRS}
         include/
