@@ -19,8 +19,6 @@ find_package(catkin REQUIRED COMPONENTS
     tf
 )
 
-add_definitions(-Wno-dev)
-
 set(USE_OMP true)
 if(${USE_OMP})
     set(TARGET_COMPILE_DEFINITIONS
