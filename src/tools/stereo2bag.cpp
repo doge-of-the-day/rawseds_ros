@@ -524,7 +524,7 @@ int main(int argc, char *argv[])
     std::cout << "String generation ... \n";
     std::cout << "Writing '" << size << "' images to '" << bag.getFileName() << "'.\n";
 
-    for(std::size_t i = 0 ; i < size ; ++i) {
+    for(std::size_t j = 0 ; j < size ; ++j) {
         if(bag.getSize() > split_size && split_size > 0) {
             open_bag(path_bagfile.string() + "_" + std::to_string(split) + extension_bag_file.string());
             ++split;
@@ -532,11 +532,11 @@ int main(int argc, char *argv[])
         }
 
 
-        const double stamp_left = images_left_stamps[i];
-        const double stamp_right= images_right_stamps[i];
+        const double stamp_left = images_left_stamps[j];
+        const double stamp_right= images_right_stamps[j];
         cv::Mat left_rectified, right_rectified;
-        cv::Mat left  = cv::imread(images_left[i], CV_LOAD_IMAGE_GRAYSCALE);
-        cv::Mat right = cv::imread(images_right[i], CV_LOAD_IMAGE_GRAYSCALE);
+        cv::Mat left  = cv::imread(images_left[j], CV_LOAD_IMAGE_GRAYSCALE);
+        cv::Mat right = cv::imread(images_right[j], CV_LOAD_IMAGE_GRAYSCALE);
         calibration.undistort(left, right, left_rectified, right_rectified);
 
 
@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        std::cout << "\r" << (i + 1) / static_cast<double>(size) * 100.0 << "% done..."  << std::flush;
+        std::cout << "\r" << (j + 1) / static_cast<double>(size) * 100.0 << "% done..."  << std::flush;
 
     }
     std::cout << "\n";

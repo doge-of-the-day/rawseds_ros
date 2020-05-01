@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
     pcl_conversions
     message_generation
     tf
+    cslibs_utility
+    cslibs_math_ros
 )
 
 set(USE_OMP true)
@@ -67,6 +69,22 @@ catkin_package(
     CATKIN_DEPENDS
         message_runtime
         rospy
+)
+
+add_executable(${PROJECT_NAME}_tf_logger
+    src/nodes/tf_logger_node.cpp
+)
+target_include_directories(${PROJECT_NAME}_tf_logger
+    SYSTEM PRIVATE
+        ${TARGET_INCLUDE_DIRS}
+)
+target_include_directories(${PROJECT_NAME}_tf_logger
+    PRIVATE
+        include/
+)
+target_link_libraries(${PROJECT_NAME}_tf_logger
+    PRIVATE
+        ${TARGET_LINK_LIBS}
 )
 
 add_executable(${PROJECT_NAME}_check_bag
