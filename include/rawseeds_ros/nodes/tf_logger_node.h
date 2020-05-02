@@ -1,3 +1,6 @@
+#ifndef RAWSEEDS_ROS_TF_LOGGER_NODE_H
+#define RAWSEEDS_ROS_TF_LOGGER_NODE_H
+
 #include <cslibs_utility/logger/csv_writer.hpp>
 #include <cslibs_math_ros/tf/tf_listener.hpp>
 #include <ros/ros.h>
@@ -39,3 +42,5 @@ class TFLoggerNode {
 
 };
 }  // namespace rawseeds_ros
+
+#endif // RAWSEEDS_ROS_TF_LOGGER_NODE_H

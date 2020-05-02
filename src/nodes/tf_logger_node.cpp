@@ -1,15 +1,17 @@
 #include <rawseeds_ros/nodes/tf_logger_node.h>
 
+
 namespace rawseeds_ros {
 
 bool TFLoggerNode::setup() {
-  const auto out_filename = nh_.param<std::string>("csv_output_file", "");
+  const auto csv_output_file = nh_.param<std::string>("csv_output_file", "");
+  const auto csv_output_file_aligned = nh_.param<std::string>("csv_output_file_aligned", "");
   const auto log_3d = nh_.param<bool>("log_3d", false);
   const auto queue_size = nh_.param<int>("queue_size", 10);
   moving_frame_ = nh_.param<std::string>("moving_frame", "/base_link");
   fixed_frame_ = nh_.param<std::string>("fixed_frame", "/map");
 
-  if (out_filename == "") {
+  if (csv_output_file == "") {
     ROS_ERROR_STREAM("Output file parameter was not set!");
     return false;
   }
@@ -18,10 +20,10 @@ bool TFLoggerNode::setup() {
 
   if (log_3d) {
     sub_tf_ = nh_.subscribe("/tf", queue_size, &TFLoggerNode::update3D, this);
-    csv_3d_.emplace(out_filename);
+    csv_3d_.emplace(csv_output_file);
   } else {
     sub_tf_ = nh_.subscribe("/tf", queue_size, &TFLoggerNode::update2D, this);
-    csv_2d_.emplace(out_filename);
+    csv_2d_.emplace(csv_output_file);
   }
 
   return true;
