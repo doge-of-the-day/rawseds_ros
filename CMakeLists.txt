@@ -41,6 +41,7 @@ find_package(PCL REQUIRED COMPONENTS
 
 
 set(TARGET_INCLUDE_DIRS
+    include/
     ${Boost_INCLUDE_DIR}
     ${catkin_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
@@ -104,12 +105,8 @@ target_link_libraries(${PROJECT_NAME}_check_bag
 )
 
 add_executable(${PROJECT_NAME}_stereo_matcher_node
-    src/nodes/undistortion.hpp
-    src/nodes/calibration.hpp
     src/nodes/stereo_matcher_node.cpp
-    src/nodes/disparity_filters.hpp
     src/nodes/disparity_filters.cpp
-    src/nodes/fgs_filter.hpp
     src/nodes/fgs_filter.cpp
 )
 target_include_directories(${PROJECT_NAME}_stereo_matcher_node
@@ -129,7 +126,6 @@ find_package(cslibs_indexed_storage QUIET)
 if(${cslibs_indexed_storage_FOUND})
     add_executable(${PROJECT_NAME}_pointcloud_filter_node
         src/nodes/pointcloud_filter_node.cpp
-        src/nodes/voxel.hpp
     )
     target_include_directories(${PROJECT_NAME}_pointcloud_filter_node
         SYSTEM PRIVATE

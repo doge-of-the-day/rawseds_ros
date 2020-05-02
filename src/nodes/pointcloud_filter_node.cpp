@@ -1,4 +1,5 @@
-#include "pointcloud_filter_node.h"
+#include <rawseeds_ros/nodes/pointcloud_filter_node.h>
+#include <rawseeds_ros/nodes/voxel.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
@@ -6,7 +7,6 @@
 #include <pcl/conversions.h>
 #include <pcl_ros/transforms.h>
 
-#include "voxel.hpp"
 
 namespace rawseeds_ros {
 PointcloudFilterNode::PointcloudFilterNode() :

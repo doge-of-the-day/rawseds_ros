@@ -1,4 +1,4 @@
-#include "tf_logger_node.h"
+#include <rawseeds_ros/nodes/tf_logger_node.h>
 
 namespace rawseeds_ros {
 
@@ -18,10 +18,10 @@ bool TFLoggerNode::setup() {
 
   if (log_3d) {
     sub_tf_ = nh_.subscribe("/tf", queue_size, &TFLoggerNode::update3D, this);
-    csv_3d_.emplace(csv_writer_3d_t{out_filename});
+    csv_3d_.emplace(out_filename);
   } else {
     sub_tf_ = nh_.subscribe("/tf", queue_size, &TFLoggerNode::update2D, this);
-    csv_2d_.emplace(csv_writer_2d_t{out_filename});
+    csv_2d_.emplace(out_filename);
   }
 
   return true;
@@ -32,7 +32,12 @@ void TFLoggerNode::run() { ros::spin(); }
 void TFLoggerNode::update2D(const tf::tfMessage::ConstPtr& tf_msg) {
   ros::Time stamp;
   if (getMovingFrameStamp(tf_msg, stamp)) {
-    /// query and write out
+    cslibs_math_2d::Transform2d transform;
+    tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp, transform,
+                                  ros::Duration{0.1});
+
+    csv_2d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
+                          transform.yaw());
 
     last_stamp_ = stamp;
   }
@@ -41,7 +46,13 @@ void TFLoggerNode::update2D(const tf::tfMessage::ConstPtr& tf_msg) {
 void TFLoggerNode::update3D(const tf::tfMessage::ConstPtr& tf_msg) {
   ros::Time stamp;
   if (getMovingFrameStamp(tf_msg, stamp)) {
-    /// query and write out
+    cslibs_math_3d::Transform3d transform;
+    tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp, transform,
+                                  ros::Duration{0.1});
+
+    csv_3d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
+                          transform.tz(), transform.roll(), transform.pitch(),
+                          transform.yaw());
 
     last_stamp_ = stamp;
   }
@@ -61,7 +72,7 @@ bool TFLoggerNode::getMovingFrameStamp(const tf::tfMessage::ConstPtr& tf_msg,
 
 }  // namespace rawseeds_ros
 
-int main(int argc, char * argv[]) {
+int main(int argc, char* argv[]) {
   ros::init(argc, argv, "rawseeds_tf_logger_node");
 
   rawseeds_ros::TFLoggerNode node;

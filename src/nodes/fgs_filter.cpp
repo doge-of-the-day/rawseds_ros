@@ -34,7 +34,7 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
-#include "fgs_filter.hpp"
+#include <rawseeds_ros/nodes/fgs_filter.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 

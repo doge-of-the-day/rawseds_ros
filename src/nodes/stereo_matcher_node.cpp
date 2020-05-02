@@ -1,4 +1,4 @@
-#include "stereo_matcher_node.h"
+#include <rawseeds_ros/nodes/stereo_matcher_node.h>
 
 #include <sensor_msgs/image_encodings.h>
 #include <pcl_conversions/pcl_conversions.h>

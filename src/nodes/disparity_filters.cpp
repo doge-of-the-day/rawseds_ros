@@ -34,8 +34,8 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
-#include "fgs_filter.hpp"
-#include "disparity_filters.hpp"
+#include <rawseeds_ros/nodes/fgs_filter.hpp>
+#include <rawseeds_ros/nodes/disparity_filters.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 #include <math.h>

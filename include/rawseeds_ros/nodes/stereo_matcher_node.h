@@ -7,9 +7,9 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 
-#include "undistortion.hpp"
-#include "calibration.hpp"
-#include "disparity_filters.hpp"
+#include <rawseeds_ros/nodes/undistortion.hpp>
+#include <rawseeds_ros/nodes/calibration.hpp>
+#include <rawseeds_ros/nodes/disparity_filters.hpp>
 
 namespace rawseeds_ros {
 class StereoMatcherNode
