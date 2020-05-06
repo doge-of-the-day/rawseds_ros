@@ -11,7 +11,7 @@ namespace rawseeds_ros {
 class TFLoggerNode {
  public:
   TFLoggerNode() = default;
-  ~TFLoggerNode() = default;;
+  ~TFLoggerNode();
 
   bool setup();
   void run();
@@ -34,7 +34,8 @@ class TFLoggerNode {
 
   std::optional<csv_writer_2d_t> csv_2d_;
   std::optional<csv_writer_3d_t> csv_3d_;
-
+  std::optional<std::string> csv_output_file_aligned_;
+  std::optional<std::string> csv_groundtruth_file_;
 
   void update2D(const tf::tfMessage::ConstPtr &tf_msg);
   void update3D(const tf::tfMessage::ConstPtr &tf_msg);

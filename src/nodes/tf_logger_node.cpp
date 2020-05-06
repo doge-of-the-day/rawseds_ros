@@ -1,19 +1,50 @@
 #include <rawseeds_ros/nodes/tf_logger_node.h>
 
+#include <rawseeds_ros/tools/dataset_aligner.hpp>
 
 namespace rawseeds_ros {
 
+TFLoggerNode::~TFLoggerNode() {
+  if (csv_output_file_aligned_.has_value()) {
+    if (csv_2d_.has_value()) {
+      const auto path = csv_2d_.value().path();
+
+      csv_2d_.reset();
+      DatasetAligner<cslibs_math_2d::Transform2d>::align(
+          csv_groundtruth_file_.value(), path, csv_output_file_aligned_.value());
+    }
+    if (csv_3d_.has_value()) {
+      const auto path = csv_2d_.value().path();
+      csv_3d_.reset();
+      DatasetAligner<cslibs_math_3d::Transform3d>::align(
+          csv_groundtruth_file_.value(), path, csv_output_file_aligned_.value());
+    }
+  }
+}
+
 bool TFLoggerNode::setup() {
   const auto csv_output_file = nh_.param<std::string>("csv_output_file", "");
-  const auto csv_output_file_aligned = nh_.param<std::string>("csv_output_file_aligned", "");
+  const auto csv_output_file_aligned =
+      nh_.param<std::string>("csv_output_file_aligned", "");
+  const auto csv_groundtruth_file =
+      nh_.param<std::string>("csv_groundtruth_file", "");
   const auto log_3d = nh_.param<bool>("log_3d", false);
   const auto queue_size = nh_.param<int>("queue_size", 10);
-  moving_frame_ = nh_.param<std::string>("moving_frame", "/base_link");
-  fixed_frame_ = nh_.param<std::string>("fixed_frame", "/map");
+  moving_frame_ = nh_.param<std::string>("moving_frame", "base_link");
+  fixed_frame_ = nh_.param<std::string>("fixed_frame", "map");
 
   if (csv_output_file == "") {
     ROS_ERROR_STREAM("Output file parameter was not set!");
     return false;
+  }
+
+  if (csv_output_file_aligned != "") {
+    csv_output_file_aligned_ = csv_output_file_aligned;
+  }
+  if (csv_groundtruth_file != "") {
+    csv_groundtruth_file_ = csv_groundtruth_file;
+  } else {
+    csv_output_file_aligned_.reset();
   }
 
   tf_listener_.reset(new cslibs_math_ros::tf::TFListener);
@@ -37,7 +68,6 @@ void TFLoggerNode::update2D(const tf::tfMessage::ConstPtr& tf_msg) {
     cslibs_math_2d::Transform2d transform;
     tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp, transform,
                                   ros::Duration{0.1});
-
     csv_2d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
                           transform.yaw());
 
