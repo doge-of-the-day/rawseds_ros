@@ -30,6 +30,8 @@ before_script:
   - cd /build/ws
   - ln -s $CI_PROJECT_DIR src/$CI_PROJECT_NAME
   # clone dependencies here:
+  - git clone $GIT_USER@$GIT_HOST:libs/cslibs_time.git -b devel cslibs_time
+  - git clone $GIT_USER@$GIT_HOST:libs/cslibs_math.git -b devel cslibs_math
   - cd /build/ws/
 
 stages:

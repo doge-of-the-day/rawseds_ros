@@ -11,13 +11,15 @@ TFLoggerNode::~TFLoggerNode() {
 
       csv_2d_.reset();
       DatasetAligner<cslibs_math_2d::Transform2d>::align(
-          csv_groundtruth_file_.value(), path, csv_output_file_aligned_.value());
+          csv_groundtruth_file_.value(), path,
+          csv_output_file_aligned_.value());
     }
     if (csv_3d_.has_value()) {
       const auto path = csv_2d_.value().path();
       csv_3d_.reset();
       DatasetAligner<cslibs_math_3d::Transform3d>::align(
-          csv_groundtruth_file_.value(), path, csv_output_file_aligned_.value());
+          csv_groundtruth_file_.value(), path,
+          csv_output_file_aligned_.value());
     }
   }
 }
@@ -66,12 +68,12 @@ void TFLoggerNode::update2D(const tf::tfMessage::ConstPtr& tf_msg) {
   ros::Time stamp;
   if (getMovingFrameStamp(tf_msg, stamp)) {
     cslibs_math_2d::Transform2d transform;
-    tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp, transform,
-                                  ros::Duration{0.1});
-    csv_2d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
-                          transform.yaw());
-
-    last_stamp_ = stamp;
+    if (tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp,
+                                      transform, ros::Duration{0.1})) {
+      csv_2d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
+                            transform.yaw());
+      last_stamp_ = stamp;
+    }
   }
 }
 
@@ -79,14 +81,13 @@ void TFLoggerNode::update3D(const tf::tfMessage::ConstPtr& tf_msg) {
   ros::Time stamp;
   if (getMovingFrameStamp(tf_msg, stamp)) {
     cslibs_math_3d::Transform3d transform;
-    tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp, transform,
-                                  ros::Duration{0.1});
-
-    csv_3d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
-                          transform.tz(), transform.roll(), transform.pitch(),
-                          transform.yaw());
-
-    last_stamp_ = stamp;
+    if (tf_listener_->lookupTransform(fixed_frame_, moving_frame_, stamp,
+                                      transform, ros::Duration{0.1})) {
+      csv_3d_.value().write(stamp.toSec(), transform.tx(), transform.ty(),
+                            transform.tz(), transform.roll(), transform.pitch(),
+                            transform.yaw());
+      last_stamp_ = stamp;
+    }
   }
 }
 
