@@ -26,10 +26,11 @@ inline void write(const Transform_T &t, const cslibs_time::Time &s,
                   typename CSVWriter<Transform_T>::type &w) {}
 
 template <typename Transform_T>
-inline void read(typename CSVReader<Transform_T>::type &r,
-                 std::map<cslibs_time::Time, Transform_T,
-                          std::less<cslibs_time::Time>,
-                          Eigen::aligned_allocator<std::pair<const cslibs_time::Time, Transform_T>>> &data) {}
+inline void read(
+    typename CSVReader<Transform_T>::type &r,
+    std::map<cslibs_time::Time, Transform_T, std::less<cslibs_time::Time>,
+             Eigen::aligned_allocator<
+                 std::pair<const cslibs_time::Time, Transform_T>>> &data) {}
 }  // namespace dataset_aligner
 
 template <typename Transform_T>
@@ -82,10 +83,10 @@ class DatasetAligner {
     }
 
     const auto duration = tb->first - ta->first;
-    const auto ratio = duration.seconds() == 0.0 ? 0.0 :
-        (stamp - ta->first).seconds() / duration.seconds();
+    const auto ratio = duration.seconds() == 0.0
+                           ? 0.0
+                           : (stamp - ta->first).seconds() / duration.seconds();
 
-    std::cout << ratio << " " << ta->second << " " << tb->second << std::endl;
     transform = ta->second.interpolate(tb->second, ratio);
     return true;
   }
@@ -101,8 +102,11 @@ template <>
 struct CSVReader<cslibs_math_2d::Transform2d> {
   using type =
       cslibs_utility::logger::CSVReader<double, double, double, double>;
-  using dataset_entry_t = std::pair<const cslibs_time::Time, cslibs_math_2d::Transform2d>;
-  using dataset_t = std::map<cslibs_time::Time, cslibs_math_2d::Transform2d, std::less<cslibs_time::Time>, Eigen::aligned_allocator<dataset_entry_t>>;
+  using dataset_entry_t =
+      std::pair<const cslibs_time::Time, cslibs_math_2d::Transform2d>;
+  using dataset_t = std::map<cslibs_time::Time, cslibs_math_2d::Transform2d,
+                             std::less<cslibs_time::Time>,
+                             Eigen::aligned_allocator<dataset_entry_t>>;
 };
 
 template <>
@@ -131,8 +135,11 @@ template <>
 struct CSVReader<cslibs_math_3d::Transform3d> {
   using type = cslibs_utility::logger::CSVReader<double, double, double, double,
                                                  double, double, double>;
-  using dataset_entry_t = std::pair<const cslibs_time::Time, cslibs_math_3d::Transform3d>;
-  using dataset_t = std::map<cslibs_time::Time, cslibs_math_3d::Transform3d, std::less<cslibs_time::Time>, Eigen::aligned_allocator<dataset_entry_t>>;
+  using dataset_entry_t =
+      std::pair<const cslibs_time::Time, cslibs_math_3d::Transform3d>;
+  using dataset_t = std::map<cslibs_time::Time, cslibs_math_3d::Transform3d,
+                             std::less<cslibs_time::Time>,
+                             Eigen::aligned_allocator<dataset_entry_t>>;
 };
 
 template <>
