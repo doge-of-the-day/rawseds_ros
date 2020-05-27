@@ -32,6 +32,7 @@ before_script:
   # clone dependencies here:
   - git clone $GIT_USER@$GIT_HOST:libs/cslibs_time.git -b devel cslibs_time
   - git clone $GIT_USER@$GIT_HOST:libs/cslibs_math.git -b devel cslibs_math
+  - git clone $GIT_USER@$GIT_HOST:libs/cslibs_utility.git -b devel cslibs_utility
   - cd /build/ws/
 
 stages:
