@@ -47,7 +47,7 @@ typedef float WorkType;
 typedef Vec<WorkType, 1> WorkVec;
 typedef WorkType (*get_weight_op)(WorkType*, unsigned char*,unsigned char*);
 
-#if CV_VERSION_MAJOR >= 3 && CV_VERSION_MINOR >= 3
+#if CV_VERSION_MAJOR >= 3 && CV_VERSION_MINOR >= 3 || CV_VERSION_MAJOR >= 4
 static const auto CV_TYPE = traits::Type<WorkVec>::value;
 #else
 static const auto CV_TYPE = cv::DataType<WorkVec>::type;

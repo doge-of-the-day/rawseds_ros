@@ -5,6 +5,13 @@
 #include <memory>
 
 namespace rawseeds_ros {
+
+#if CV_VERSION_MAJOR >= 4
+static const auto CV_UNDISTORTION_INTERPOLATION_METHOD = cv::INTER_LINEAR;
+#else
+static const auto CV_UNDISTORTION_INTERPOLATION_METHOD = CV_INTER_LINEAR;
+#endif
+
 class Undistortion
 {
 public:
@@ -23,7 +30,7 @@ public:
 
     void apply(cv::Mat &src, cv::Mat &dst)
     {
-        cv::remap(src, dst, map_1_, map_2_, CV_INTER_LINEAR);
+        cv::remap(src, dst, map_1_, map_2_, CV_UNDISTORTION_INTERPOLATION_METHOD);
     }
 
     const cv::Mat & getMask() const

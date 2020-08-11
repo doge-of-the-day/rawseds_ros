@@ -13,6 +13,20 @@
 namespace po = boost::program_options;
 namespace bf = boost::filesystem;
 
+
+#if CV_VERSION_MAJOR >= 4
+static const auto CV_INTERPOLATION_METHOD = cv::INTER_LINEAR;
+#else
+static const auto CV_INTERPOLATION_METHOD = CV_INTER_LINEAR;
+#endif
+
+#if CV_VERSION_MAJOR >= 4
+static const auto CV_IMAGE_LOAD_METHOD = cv::IMREAD_GRAYSCALE;
+#else
+static const auto CV_IMAGE_LOAD_METHOD = CV_LOAD_IMAGE_GRAYSCALE;
+#endif
+
+
 inline void readImageDirectory(const bf::path &path,
                                std::vector<std::string> &image_paths,
                                std::vector<double> &image_stamps)
@@ -210,8 +224,8 @@ struct Calibration {
             return;
         }
 
-        cv::remap(left, left_undistorted, map_left_1_, map_left_2_, CV_INTER_LINEAR);
-        cv::remap(right, right_undistorted, map_right_1_, map_right_2_, CV_INTER_LINEAR);
+        cv::remap(left, left_undistorted, map_left_1_, map_left_2_, CV_INTERPOLATION_METHOD);
+        cv::remap(right, right_undistorted, map_right_1_, map_right_2_, CV_INTERPOLATION_METHOD);
     }
 };
 
@@ -377,8 +391,11 @@ int main(int argc, char *argv[])
 
         const double stamp_left = images_left_stamps[i];
         const double stamp_right= images_right_stamps[i];
-        cv::Mat left  = cv::imread(images_left[i], CV_LOAD_IMAGE_GRAYSCALE);
-        cv::Mat right = cv::imread(images_right[i], CV_LOAD_IMAGE_GRAYSCALE);
+
+
+
+        cv::Mat left  = cv::imread(images_left[i], CV_IMAGE_LOAD_METHOD);
+        cv::Mat right = cv::imread(images_right[i], CV_IMAGE_LOAD_METHOD);
 
         if(debug) {
             cv::imshow("left", left);
